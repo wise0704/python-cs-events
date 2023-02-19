@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Callable, Collection, Iterator
-from typing import Any, Final, ParamSpec, Type, get_origin, get_type_hints, overload
+from typing import Any, Final, ParamSpec, get_origin, get_type_hints
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -26,7 +26,7 @@ class Event(Collection[EventHandler[P]]):
         event(...)
 
     Type Args:
-        P (ParamSpec): Event data parameter specification.
+     - P (ParamSpec): Event data parameter specification.
     """
 
     __slots__ = ("__handlers")
@@ -38,7 +38,7 @@ class Event(Collection[EventHandler[P]]):
         Initializes a new instance of the Event class.
 
         Args:
-            *handlers (EventHandler[P]): List of handlers to subscribe to the event.
+         - *handlers (EventHandler[P]): List of handlers to subscribe to the event.
         """
 
         self.__handlers = [*handlers]
@@ -48,7 +48,7 @@ class Event(Collection[EventHandler[P]]):
         Subscribes the handler to this event.
 
         Args:
-            handler (EventHandler[P]): An event handler.
+         - handler (EventHandler[P]): An event handler.
 
         Returns:
             (Self): This event.
@@ -64,7 +64,7 @@ class Event(Collection[EventHandler[P]]):
         If the handler has been added multiple times, removes only the last occurrence.
 
         Args:
-            handler (EventHandler[P]): An event handler
+         - handler (EventHandler[P]): An event handler
 
         Returns:
             (Self): This event
@@ -81,7 +81,7 @@ class Event(Collection[EventHandler[P]]):
         Returns whether the handler has been subscribed to this event.
 
         Args:
-            handler (object): An event handler.
+         - handler (object): An event handler.
 
         Returns:
             (bool): True if handler is subscribed, False otherwise.
@@ -114,9 +114,6 @@ class Event(Collection[EventHandler[P]]):
         Raises this event.
 
         Handlers will be invoked in the order they subscribed.
-
-        Args:
-            *args, **kwargs (P): Event data arguments.
         """
 
         for handler in [*self.__handlers]:  # apparently faster than list.copy(), list[:] or even (*list, )
@@ -159,15 +156,15 @@ class EventDispatcher:
 
         class EventFieldsExample:
             def __init__(self) -> None:
-                self.on_changed = Event[str]()
-                self.on_input = Event[int, object]()
+                self.on_changed = Event[object, str]()
+                self.on_input = Event[int]()
                 ...
 
     Event properties::
 
         class EventPropertiesExample(EventDispatcher):
-            on_changed: Event[str]
-            on_input: Event[int, object]
+            on_changed: Event[object, str]
+            on_input: Event[int]
 
             def __init__(self) -> None:
                 super().__init__()
@@ -201,17 +198,20 @@ class EventDispatcher:
         super().__init__(*args, **kwargs)
         self.__events = {}
 
-    def __init_subclass__(cls, *, event_prefix: str | None = None, **kwargs) -> None:
+    def __init_subclass__(cls, *, event_prefix: str | None = None, del_empty_event: bool = False, **kwargs) -> None:
         """
         This method is called when this class is subclassed.
 
         This must be called in order for event properties to work.
 
         Args:
-            event_prefix (str | None, optional):
-            When specified, only annotations that starts with the prefix are processed.
-            If unspecified or `None`, then the value `EventDispatcher.default_prefix` is used.
-            Defaults to `None`.
+         - event_prefix (str | None, optional):
+            When specified, only annotations that start with the prefix are processed.
+            If unspecified or None, then the value `EventDispatcher.default_prefix` is used.
+            Defaults to None.  
+         - del_empty_event (bool, optional): 
+            Whether to automatically delete an event from the dictionary if it's set to an empty event.
+            Defaults to False.
         """
 
         super().__init_subclass__(**kwargs)
@@ -219,15 +219,26 @@ class EventDispatcher:
         if event_prefix is None:
             event_prefix = cls.default_prefix
 
-        def create_event(name: str, T: Type[Event[...]]) -> property:
-            def fget(self: EventDispatcher) -> T:
-                return self.__events.get(name, _empty_event)
+        def create_event(name: str, T: type[Event[...]], is_subclass: bool) -> property:
+            if is_subclass:
+                def fget(self: EventDispatcher) -> T:
+                    if (event := self.__events.get(name)) is None:
+                        event = self.__events[name] = T()
+                    return event
 
-            def fset(self: EventDispatcher, value: T) -> None:
-                if len(value):
+            else:
+                def fget(self: EventDispatcher) -> T:
+                    return self.__events.get(name, _empty_event)
+
+            if del_empty_event:
+                def fset(self: EventDispatcher, value: T) -> None:
+                    if len(value):
+                        self.__events[name] = value
+                    elif name in self.__events:
+                        del self.__events[name]
+            else:
+                def fset(self: EventDispatcher, value: T) -> None:
                     self.__events[name] = value
-                elif name in self.__events:
-                    del self.__events[name]
 
             def fdel(self: EventDispatcher) -> None:
                 if name in self.__events:
@@ -237,5 +248,34 @@ class EventDispatcher:
 
         for (name, T) in get_type_hints(cls).items():
             if name.startswith(event_prefix):
-                if (get_origin(T) or T) is Event:
-                    setattr(cls, name, create_event(name[len(event_prefix):], T))
+                T = get_origin(T) or T
+                if issubclass(T, Event):
+                    setattr(cls, name, create_event(name[len(event_prefix):], T, T is not Event))
+
+
+class EventFields:
+    default_prefix: str = ""
+    """
+    (static str) The default prefix to use when `None` is passed to `event_prefix`.
+    """
+
+    __slots__ = ("__events__")
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        for (name, T) in self.__events__:
+            setattr(self, name, T())
+
+    def __init_subclass__(cls, *, event_prefix: str | None = None, **kwargs) -> None:
+        super().__init_subclass__(**kwargs)
+
+        if event_prefix is None:
+            event_prefix = cls.default_prefix
+
+        cls.__events__: list[tuple[str, type[Event[...]]]] = [
+            (name, T)
+            for (name, T) in get_type_hints(cls).items()
+            if name.startswith(event_prefix)
+            if issubclass(get_origin(T) or T, Event)
+        ]
