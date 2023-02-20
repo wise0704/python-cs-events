@@ -1,7 +1,7 @@
 import sys
-import typing
 from collections.abc import Callable, Collection, Iterator
-from typing import Any, ClassVar, Final, Literal, ParamSpec, TypeVar
+from typing import (Any, ClassVar, Final, Literal, ParamSpec, TypeVar, final,
+                    get_origin, get_type_hints, overload)
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -17,6 +17,7 @@ P = ParamSpec("P")
 EventHandler = Callable[P, void]
 
 
+@final
 class Event(Collection[EventHandler[P]]):
     """
     Represents an event that handlers can subscribe to.
@@ -130,7 +131,7 @@ class Event(Collection[EventHandler[P]]):
             handler(*args, **kwargs)
 
 
-class _EmptyEvent(Event[...]):
+class _EmptyEvent(Event[...]):  # type: ignore
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -185,8 +186,7 @@ class EventDispatcher:
 
     Event properties are slower than event fields due to the additional dictionary structure.
     The trade-off is between memory and speed.
-    If your class defines many events that are infrequently raised, or only few of the events are handled,
-    you'll want to use event properties.
+    If your class defines many events that are infrequently raised, you'll want to use event properties.
     """
 
     default_prefix: ClassVar[str] = ""
@@ -229,25 +229,18 @@ class EventDispatcher:
         if event_prefix is None:
             event_prefix = cls.default_prefix
 
-        def create_event(name: str, T: type[Event[...]], is_subclass: bool, /) -> property:
-            if is_subclass:
-                def fget(self: EventDispatcher, /) -> T:
-                    if (event := self.__events.get(name)) is None:
-                        event = self.__events[name] = T()
-                    return event
-
-            else:
-                def fget(self: EventDispatcher, /) -> T:
-                    return self.__events.get(name, _empty_event)
+        def create_event(name: str, /) -> property:
+            def fget(self: EventDispatcher, /) -> Event[...]:
+                return self.__events.get(name, _empty_event)
 
             if del_empty_event:
-                def fset(self: EventDispatcher, value: T, /) -> None:
+                def fset(self: EventDispatcher, value: Event[...], /) -> None:
                     if len(value):
                         self.__events[name] = value
                     elif name in self.__events:
                         del self.__events[name]
             else:
-                def fset(self: EventDispatcher, value: T, /) -> None:
+                def fset(self: EventDispatcher, value: Event[...], /) -> None:
                     self.__events[name] = value
 
             def fdel(self: EventDispatcher, /) -> None:
@@ -256,21 +249,20 @@ class EventDispatcher:
 
             return property(fget, fset, fdel)
 
-        for (name, T) in typing.get_type_hints(cls).items():
+        for (name, T) in get_type_hints(cls).items():
             if name.startswith(event_prefix):
-                T = typing.get_origin(T) or T
-                if isinstance(T, type) and issubclass(T, Event):
-                    setattr(cls, name, create_event(name[len(event_prefix):], T, T is not Event))
+                if (get_origin(T) or T) is Event:
+                    setattr(cls, name, create_event(name[len(event_prefix):]))
 
 
 _cls = TypeVar("_cls", bound=type)
 
 
-@typing.overload
+@overload
 def events(cls: _cls, /) -> _cls: ...
 
 
-@typing.overload
+@overload
 def events(*, prefix: str = "") -> Callable[[_cls], _cls]: ...
 
 
@@ -286,30 +278,24 @@ def events(cls: _cls | None = None, /, *, prefix: str = "") -> _cls | Callable[[
     """
 
     if cls is None:
-        def partial(cls: _cls) -> _cls:
-            return _process_class(cls, prefix)
-        return partial
+        return lambda cls: _process_class(cls, prefix)
 
     return _process_class(cls, prefix)
 
 
 def _process_class(cls: _cls, prefix: str) -> _cls:
     body_lines: list[str] = []
-    globals: dict[str, object] = {"Event": Event}
 
-    for (name, T) in typing.get_type_hints(cls).items():
+    for (name, T) in get_type_hints(cls).items():
         if name.startswith(prefix):
-            T = typing.get_origin(T) or T
-            if isinstance(T, type) and issubclass(T, Event):
-                if T is Event:
-                    event_type = "Event"
-                else:
-                    event_type = f"_evt_{name}"
-                    globals[event_type] = T
-                body_lines.append(f"self.{name} = {event_type}()")
+            if (get_origin(T) or T) is Event:
+                body_lines.append(f"self.{name} = Event()")
 
     if not body_lines:
         return cls
+
+    globals: dict[str, object] = {"Event": Event}
+    locals: dict[str, Callable[..., None]] = {}
 
     replace = "__init__" in vars(cls)
 
@@ -321,7 +307,6 @@ def _process_class(cls: _cls, prefix: str) -> _cls:
         body_lines.insert(0, f"super(__class__, self).__init__(*args, **kwargs)")
 
     body = "\n".join(f"\t{line}" for line in body_lines)
-    locals: dict[Literal["__init__"], Callable[..., None]] = {}
     exec(f"def __init__(self, *args, **kwargs) -> None:\n{body}", globals, locals)
     func = locals["__init__"]
 
