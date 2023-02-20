@@ -258,7 +258,7 @@ class EventDispatcher:
         for (name, T) in get_type_hints(cls).items():
             if name.startswith(event_prefix):
                 T = get_origin(T) or T
-                if issubclass(T, Event):
+                if isinstance(T, type) and issubclass(T, Event):
                     setattr(cls, name, create_event(name[len(event_prefix):], T, T is not Event))
 
 
