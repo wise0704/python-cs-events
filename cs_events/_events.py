@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Callable, Collection, Iterator
-from typing import Any, Final, ParamSpec, get_origin, get_type_hints
+from typing import Any, ClassVar, Final, ParamSpec, get_origin, get_type_hints
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -8,13 +8,22 @@ else:
     from typing_extensions import Self
 
 
+# Python does not provide a void type, which is a useful feature in callbacks,
+# and is clearly different from None.
+void = None | Any
+
 P = ParamSpec("P")
-EventHandler = Callable[P, Any]
+EventHandler = Callable[P, void]
 
 
 class Event(Collection[EventHandler[P]]):
     """
     Represents an event that handlers can subscribe to.
+
+    The type argument specifies the event data parameters::
+
+        event = Event[str, int]()
+        # accepts handlers (str, int) -> void
 
     Handlers can subscribe to and unsubscribe from an event by::
 
@@ -38,17 +47,17 @@ class Event(Collection[EventHandler[P]]):
         Initializes a new instance of the Event class.
 
         Args:
-         - *handlers (EventHandler[P]): List of handlers to subscribe to the event.
+         - *handlers ((**P) -> void): List of handlers to subscribe to the event.
         """
 
         self.__handlers = [*handlers]
 
-    def __iadd__(self, handler: EventHandler[P]) -> Self:
+    def __iadd__(self, handler: EventHandler[P], /) -> Self:
         """
         Subscribes the handler to this event.
 
         Args:
-         - handler (EventHandler[P]): An event handler.
+         - handler ((**P) -> void): An event handler.
 
         Returns:
             (Self): This event.
@@ -57,14 +66,14 @@ class Event(Collection[EventHandler[P]]):
         self.__handlers.append(handler)
         return self
 
-    def __isub__(self, handler: EventHandler[P]) -> Self:
+    def __isub__(self, handler: EventHandler[P], /) -> Self:
         """
         Unsubscribes the handler from this event.
 
         If the handler has been added multiple times, removes only the last occurrence.
 
         Args:
-         - handler (EventHandler[P]): An event handler
+         - handler ((**P) -> void): An event handler
 
         Returns:
             (Self): This event
@@ -76,7 +85,7 @@ class Event(Collection[EventHandler[P]]):
                 break
         return self
 
-    def __contains__(self, handler: object) -> bool:
+    def __contains__(self, handler: object, /) -> bool:
         """
         Returns whether the handler has been subscribed to this event.
 
@@ -94,7 +103,7 @@ class Event(Collection[EventHandler[P]]):
         Returns an iterator from the list of subscribed handlers.
 
         Yields:
-            (EventHandler[P]): A subscribed event handler.
+            ((**P) -> void): A subscribed event handler.
         """
 
         return self.__handlers.__iter__()
@@ -126,13 +135,13 @@ class _EmptyEvent(Event[...]):
     def __init__(self) -> None:
         pass
 
-    def __iadd__(self, handler: EventHandler[P]) -> Event[P]:
+    def __iadd__(self, handler: EventHandler[P], /) -> Event[P]:
         return Event(handler)
 
-    def __isub__(self, handler: EventHandler[...]) -> Self:
+    def __isub__(self, handler: EventHandler[...], /) -> Self:
         return self
 
-    def __contains__(self, handler: object) -> bool:
+    def __contains__(self, handler: object, /) -> bool:
         return False
 
     def __iter__(self) -> Iterator[EventHandler[...]]:
@@ -179,7 +188,7 @@ class EventDispatcher:
     you'll want to use event properties.
     """
 
-    default_prefix: str = ""
+    default_prefix: ClassVar[str] = ""
     """
     (static str) The default prefix to use when `None` is passed to `event_prefix`.
     """
@@ -219,28 +228,28 @@ class EventDispatcher:
         if event_prefix is None:
             event_prefix = cls.default_prefix
 
-        def create_event(name: str, T: type[Event[...]], is_subclass: bool) -> property:
+        def create_event(name: str, T: type[Event[...]], is_subclass: bool, /) -> property:
             if is_subclass:
-                def fget(self: EventDispatcher) -> T:
+                def fget(self: EventDispatcher, /) -> T:
                     if (event := self.__events.get(name)) is None:
                         event = self.__events[name] = T()
                     return event
 
             else:
-                def fget(self: EventDispatcher) -> T:
+                def fget(self: EventDispatcher, /) -> T:
                     return self.__events.get(name, _empty_event)
 
             if del_empty_event:
-                def fset(self: EventDispatcher, value: T) -> None:
+                def fset(self: EventDispatcher, value: T, /) -> None:
                     if len(value):
                         self.__events[name] = value
                     elif name in self.__events:
                         del self.__events[name]
             else:
-                def fset(self: EventDispatcher, value: T) -> None:
+                def fset(self: EventDispatcher, value: T, /) -> None:
                     self.__events[name] = value
 
-            def fdel(self: EventDispatcher) -> None:
+            def fdel(self: EventDispatcher, /) -> None:
                 if name in self.__events:
                     del self.__events[name]
 
