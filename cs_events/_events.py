@@ -1,6 +1,7 @@
 import sys
+import typing
 from collections.abc import Callable, Collection, Iterator
-from typing import Any, ClassVar, Final, ParamSpec, get_origin, get_type_hints
+from typing import Any, ClassVar, Final, Literal, ParamSpec, TypeVar
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -255,36 +256,94 @@ class EventDispatcher:
 
             return property(fget, fset, fdel)
 
-        for (name, T) in get_type_hints(cls).items():
+        for (name, T) in typing.get_type_hints(cls).items():
             if name.startswith(event_prefix):
-                T = get_origin(T) or T
+                T = typing.get_origin(T) or T
                 if isinstance(T, type) and issubclass(T, Event):
                     setattr(cls, name, create_event(name[len(event_prefix):], T, T is not Event))
 
 
-class EventFields:
-    default_prefix: str = ""
+_cls = TypeVar("_cls", bound=type)
+
+
+@typing.overload
+def events(cls: _cls, /) -> _cls: ...
+
+
+@typing.overload
+def events(*, prefix: str = "") -> Callable[[_cls], _cls]: ...
+
+
+def events(cls: _cls | None = None, /, *, prefix: str = "") -> _cls | Callable[[_cls], _cls]:
     """
-    (static str) The default prefix to use when `None` is passed to `event_prefix`.
+    _summary_
+
+    Args:
+     - prefix (str, optional): _description_. Defaults to "".
+
+    Returns:
+        type: _description_
     """
 
-    __slots__ = ("__events__")
+    if cls is None:
+        def partial(cls: _cls) -> _cls:
+            return _process_class(cls, prefix)
+        return partial
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    return _process_class(cls, prefix)
 
-        for (name, T) in self.__events__:
-            setattr(self, name, T())
 
-    def __init_subclass__(cls, *, event_prefix: str | None = None, **kwargs) -> None:
-        super().__init_subclass__(**kwargs)
+def _process_class(cls: _cls, prefix: str) -> _cls:
+    body_lines: list[str] = []
+    globals: dict[str, object] = {"Event": Event}
 
-        if event_prefix is None:
-            event_prefix = cls.default_prefix
+    for (name, T) in typing.get_type_hints(cls).items():
+        if name.startswith(prefix):
+            T = typing.get_origin(T) or T
+            if isinstance(T, type) and issubclass(T, Event):
+                if T is Event:
+                    event_type = "Event"
+                else:
+                    event_type = f"_evt_{name}"
+                    globals[event_type] = T
+                body_lines.append(f"self.{name} = {event_type}()")
 
-        cls.__events__: list[tuple[str, type[Event[...]]]] = [
-            (name, T)
-            for (name, T) in get_type_hints(cls).items()
-            if name.startswith(event_prefix)
-            if issubclass(get_origin(T) or T, Event)
-        ]
+    if not body_lines:
+        return cls
+
+    replace = "__init__" in vars(cls)
+
+    if replace:
+        globals["__init__"] = cls.__init__
+        body_lines.append(f"__init__(self, *args, **kwargs)")
+    else:
+        globals["__class__"] = cls
+        body_lines.insert(0, f"super(__class__, self).__init__(*args, **kwargs)")
+
+    body = "\n".join(f"\t{line}" for line in body_lines)
+    locals: dict[Literal["__init__"], Callable[..., None]] = {}
+    exec(f"def __init__(self, *args, **kwargs) -> None:\n{body}", globals, locals)
+    func = locals["__init__"]
+
+    if replace:
+        for attr in (
+            "__module__",
+            "__name__",
+            "__qualname__",
+            "__doc__",
+            "__annotations__",
+            "__dict__"
+        ):
+            try:
+                value = getattr(cls.__init__, attr)
+            except AttributeError:
+                pass
+            else:
+                setattr(func, attr, value)
+    else:
+        func.__module__ = cls.__module__
+        func.__name__ = "__init__"
+        func.__qualname__ = f"{cls.__qualname__}.__init__"
+
+    cls.__init__ = func
+    return cls
