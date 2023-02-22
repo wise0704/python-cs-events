@@ -251,10 +251,10 @@ def _create_init(cls: _T, prefix: str, /) -> _T:
 
     if replace:
         globals["__init__"] = cls.__init__
-        body_lines.append(f"__init__(self, *args, **kwargs)")
+        body_lines.append("__init__(self, *args, **kwargs)")
     else:
         globals["__class__"] = cls
-        body_lines.insert(0, f"super(__class__, self).__init__(*args, **kwargs)")
+        body_lines.insert(0, "super(__class__, self).__init__(*args, **kwargs)")
 
     body = "\n".join(f"\t{line}" for line in body_lines)
     exec(f"def __init__(self, *args, **kwargs) -> None:\n{body}", globals, locals)
