@@ -21,6 +21,10 @@ classifiers = [
     "Typing :: Typed",
 ]
 
+[project.urls]
+"GitHub" = "https://github.com/wise0704/cs-events"
+"Issues" = "https://github.com/wise0704/cs-events/issues"
+
 [tool.pytest.ini_options]
 addopts = "-v --no-header"
 console_output_style = "count"
