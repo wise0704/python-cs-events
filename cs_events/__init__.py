@@ -1,7 +1,6 @@
-from ._events import Event, EventDispatcher, events
+from ._events import Event, events
 
 __all__ = [
     "Event",
-    "EventDispatcher",
     "events",
 ]

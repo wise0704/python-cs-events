@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Callable, Collection, Iterator
-from typing import (Any, ClassVar, Final, Literal, ParamSpec, TypeVar, final,
+from typing import (Any, Final, Literal, ParamSpec, Protocol, TypeVar, final,
                     get_origin, get_type_hints, overload)
 
 if sys.version_info >= (3, 11):
@@ -159,131 +159,81 @@ class _EmptyEvent(Event[...]):  # type: ignore
 _empty_event: Final = _EmptyEvent()
 
 
-class EventDispatcher:
-    """
-    A base class that provides basic functionality to support dictionary-based event properties.
+class _Events(Protocol):
+    _events: dict[str, Event[...]]
 
-    Event fields::
+
+_T = TypeVar("_T", bound=type)
+_TEvents = TypeVar("_TEvents", bound=type[_Events])
+
+
+@overload
+def events(cls: _T, /) -> _T: ...
+
+
+@overload
+def events(*, prefix: str = "", properties: Literal[False] = ...) -> Callable[[_T], _T]: ...
+
+
+@overload
+def events(*, prefix: str = "", properties: Literal[True]) -> Callable[[_TEvents], _TEvents]: ...
+
+
+def events(cls: _T | None = None, /, *, prefix: str = "", properties: bool = False) -> _T | Callable[[_T], _T]:
+    """
+    Adds event fields/properties based on the annotations defined in the class.
+
+    If this decorator is used to add event fields (`properties=False`), then::
+
+        @events
+        class EventFieldsExample:
+            on_changed: Event[object, str]
+            on_input: Event[int]
+
+    is equivalent to::
 
         class EventFieldsExample:
             def __init__(self) -> None:
-                self.on_changed = Event[object, str]()
-                self.on_input = Event[int]()
-                ...
+                self.on_changed: Event[object, str] = Event()
+                self.on_input: Event[int] = Event()
 
-    Event properties::
+    Event properties require a dictionary field `_event`::
 
-        class EventPropertiesExample(EventDispatcher):
+        @events(properties=True)
+        class EventPropertiesExample:
             on_changed: Event[object, str]
             on_input: Event[int]
 
             def __init__(self) -> None:
-                super().__init__()
-                ...
+                self._events: dict[str, Event[...]] = {}
 
     If your class defines a large number of events, the storage cost of one field per event might not be acceptable.
-    For those situations, EventDispatcher provides event properties that stores the events lazily in a dictionary.
+    For those situations, event properties can be used to store the events lazily in a dictionary.
 
     Event properties are slower than event fields due to the additional dictionary structure.
     The trade-off is between memory and speed.
     If your class defines many events that are infrequently raised, you'll want to use event properties.
-    """
-
-    default_prefix: ClassVar[str] = ""
-    """
-    (static str) The default prefix to use when `None` is passed to `event_prefix`.
-    """
-
-    __slots__ = ("__events")
-
-    __events: dict[str, Event[...]]
-
-    def __init__(self, *args, **kwargs) -> None:
-        """
-        Initializes a new instance of the EventDispatcher class.
-
-        This must be called in order for event properties to work.
-        """
-
-        super().__init__(*args, **kwargs)
-        self.__events = {}
-
-    def __init_subclass__(cls, *, event_prefix: str | None = None, del_empty_event: bool = False, **kwargs) -> None:
-        """
-        This method is called when this class is subclassed.
-
-        This must be called in order for event properties to work.
-
-        Args:
-         - event_prefix (str | None, optional):
-            When specified, only annotations that start with the prefix are processed.
-            If unspecified or None, then the value `EventDispatcher.default_prefix` is used.
-            Defaults to None.  
-         - del_empty_event (bool, optional): 
-            Whether to automatically delete an event from the dictionary if it's set to an empty event.
-            Defaults to False.
-        """
-
-        super().__init_subclass__(**kwargs)
-
-        if event_prefix is None:
-            event_prefix = cls.default_prefix
-
-        def create_event(name: str, /) -> property:
-            def fget(self: EventDispatcher, /) -> Event[...]:
-                return self.__events.get(name, _empty_event)
-
-            if del_empty_event:
-                def fset(self: EventDispatcher, value: Event[...], /) -> None:
-                    if len(value):
-                        self.__events[name] = value
-                    elif name in self.__events:
-                        del self.__events[name]
-            else:
-                def fset(self: EventDispatcher, value: Event[...], /) -> None:
-                    self.__events[name] = value
-
-            def fdel(self: EventDispatcher, /) -> None:
-                if name in self.__events:
-                    del self.__events[name]
-
-            return property(fget, fset, fdel)
-
-        for (name, T) in get_type_hints(cls).items():
-            if name.startswith(event_prefix):
-                if (get_origin(T) or T) is Event:
-                    setattr(cls, name, create_event(name[len(event_prefix):]))
-
-
-_cls = TypeVar("_cls", bound=type)
-
-
-@overload
-def events(cls: _cls, /) -> _cls: ...
-
-
-@overload
-def events(*, prefix: str = "") -> Callable[[_cls], _cls]: ...
-
-
-def events(cls: _cls | None = None, /, *, prefix: str = "") -> _cls | Callable[[_cls], _cls]:
-    """
-    _summary_
 
     Args:
-     - prefix (str, optional): _description_. Defaults to "".
+     - cls (type): A class with event annotations.
+     - prefix (str, optional): Only process annotations that start with the prefix. Defaults to "".
+     - properties (bool, optional): Whether to create event properties instead of fields. Defaults to False.
 
     Returns:
-        type: _description_
+        (type): cls
     """
 
     if cls is None:
-        return lambda cls: _process_class(cls, prefix)
+        if properties:
+            return lambda cls: _create_events(cls, prefix)
+        return lambda cls: _create_init(cls, prefix)
 
-    return _process_class(cls, prefix)
+    if properties:
+        return _create_events(cls, prefix)
+    return _create_init(cls, prefix)
 
 
-def _process_class(cls: _cls, prefix: str) -> _cls:
+def _create_init(cls: _T, prefix: str, /) -> _T:
     body_lines: list[str] = []
 
     for (name, T) in get_type_hints(cls).items():
@@ -331,4 +281,26 @@ def _process_class(cls: _cls, prefix: str) -> _cls:
         func.__qualname__ = f"{cls.__qualname__}.__init__"
 
     cls.__init__ = func
+    return cls
+
+
+def _create_events(cls: _TEvents, prefix: str, /) -> _TEvents:
+    def create_event(name: str, /) -> property:
+        def fget(self: _Events, /) -> Event[...]:
+            return self._events.get(name, _empty_event)
+
+        def fset(self: _Events, value: Event[...], /) -> None:
+            if self._events.setdefault(name, value) is not value:
+                raise AttributeError(f"can't set attribute '{name}'", name=name, obj=self)
+
+        def fdel(self: _Events, /) -> None:
+            if name in self._events:
+                del self._events[name]
+
+        return property(fget, fset, fdel)
+
+    for (name, T) in get_type_hints(cls).items():
+        if name.startswith(prefix):
+            if (get_origin(T) or T) is Event:
+                setattr(cls, name, create_event(name[len(prefix)]))
     return cls
