@@ -11,6 +11,8 @@ Python does not support an addition of two `Callable` types.
 So the `Event[P]` class is provided to mimic delegates:
 
 ```python
+from cs_events import Event
+
 on_change: Event[object, str] = Event()
 ```
 
@@ -30,13 +32,13 @@ An event can be raised by simply invoking it with the arguments:
 on_change(self, "value")
 ```
 
-Since `Event` acts just like a delegate in C#, it is not required to be bound to a class or an instance object.
+Since `Event` acts just like a delegate from C#, it is not required to be bound to a class or an instance object.
 This is the major difference to other packages that try to implement the C#-style event system, which usually revolve around a container object for events.
 
 An example class with event fields may look like this:
 
 ```python
-class EventsExample:
+class EventExample:
     def __init__(self) -> None:
         self.on_update: Event[str] = Event()
         self.__value = ""
@@ -46,7 +48,7 @@ class EventsExample:
             self.__value = value
             self.on_update(value)
 
-obj = EventsExample()
+obj = EventExample()
 obj.on_update += lambda value: print(f"obj.{value=}")
 obj.update("new value")
 ```
@@ -55,6 +57,8 @@ A class decorator `@events` is provided as a shortcut for event fields and
 properties:
 
 ```python
+from cs_events import Event, events
+
 @events
 class EventFieldsExample:
     item_added: Event[object]
@@ -63,6 +67,7 @@ class EventFieldsExample:
 
 @events(properties=True)
 class EventPropertiesExample:
+    loaded: Event[int]
     disposed: Event[[]]
 
     def __init__(self) -> None:
