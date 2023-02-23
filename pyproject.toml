@@ -8,15 +8,18 @@ description = "C#-style event handling mechanism for Python"
 authors = [{ name = "Daniel Jeong", email = "wise0704@outlook.com" }]
 keywords = ["python", "event", "c#"]
 readme = "README.md"
-license = { file = "LICENSE" }
+license = { text = "MIT" }
 requires-python = ">=3.10"
 dynamic = ["dependencies", "version"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development",
     "Topic :: Software Development :: Libraries",
     "Typing :: Typed",
 ]
