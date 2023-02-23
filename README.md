@@ -1,5 +1,16 @@
 # C#-Style Event Handling Mechanism for Python
 
+<p align="center">
+    <img src="https://img.shields.io/pypi/v/cs-events" />
+    <img src="https://img.shields.io/pypi/status/cs-events" />
+    <img src="https://img.shields.io/pypi/pyversions/cs-events" />
+    <img src="https://img.shields.io/pypi/l/cs-events" />
+    <br/>
+    <img src="https://img.shields.io/github/actions/workflow/status/wise0704/python-cs-events/python-package.yml" />
+    <img src="https://img.shields.io/github/issues/wise0704/python-cs-events" />
+    <img src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events" />
+</p>
+
 C# provides a very simple syntax using the observer pattern for its event handling system.
 The aim of this project is to implement the pattern in python as similarly as possible.
 
