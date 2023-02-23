@@ -197,7 +197,7 @@ def events(cls: _T | None = None, /, *, prefix: str = "", properties: bool = Fal
                 self.on_changed: Event[object, str] = Event()
                 self.on_input: Event[int] = Event()
 
-    Event properties require a dictionary field `_event`::
+    Event properties require a dictionary field `_events`::
 
         @events(properties=True)
         class EventPropertiesExample:
