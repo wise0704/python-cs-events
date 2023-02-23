@@ -75,3 +75,9 @@ class EventPropertiesExample:
 ```
 
 Check the documentation of `@events` for more detail on event properties.
+
+## Installation
+
+```console
+pip install cs-events
+```
