@@ -2,34 +2,27 @@
 
 <p align="center">
     <a href="https://pypi.org/project/cs-events/">
-        <img alt="pypi"
-        src="https://img.shields.io/pypi/v/cs-events" />
-    </a>
+    <img alt="pypi"
+    src="https://img.shields.io/pypi/v/cs-events" /></a>
     <a href="https://pypi.org/project/cs-events/">
-        <img alt="status"
-        src="https://img.shields.io/pypi/status/cs-events" />
-    </a>
+    <img alt="status"
+    src="https://img.shields.io/pypi/status/cs-events" /></a>
     <a href="https://www.python.org/downloads/">
-        <img alt="python"
-        src="https://img.shields.io/pypi/pyversions/cs-events" />
-    </a>
+    <img alt="python"
+    src="https://img.shields.io/pypi/pyversions/cs-events" /></a>
     <a href="https://github.com/wise0704/python-cs-events/blob/master/LICENSE">
-        <img alt="license"
-        src="https://img.shields.io/pypi/l/cs-events" />
-    </a>
+    <img alt="license"
+    src="https://img.shields.io/pypi/l/cs-events" /></a>
     <br/>
     <a href="https://github.com/wise0704/python-cs-events/actions/workflows/python-package.yml">
-        <img alt="build"
-        src="https://img.shields.io/github/actions/workflow/status/wise0704/python-cs-events/python-package.yml" />
-    </a>
+    <img alt="build"
+    src="https://img.shields.io/github/actions/workflow/status/wise0704/python-cs-events/python-package.yml" /></a>
     <a href="https://github.com/wise0704/python-cs-events/issues">
-        <img alt="issues"
-        src="https://img.shields.io/github/issues/wise0704/python-cs-events" />
-    </a>
+    <img alt="issues"
+    src="https://img.shields.io/github/issues/wise0704/python-cs-events" /></a>
     <a href="https://github.com/wise0704/python-cs-events/pulls">
-        <img alt="pull requests"
-        src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events" />
-    </a>
+    <img alt="pull requests"
+    src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events" /></a>
 </p>
 
 C# provides a very simple syntax using the observer pattern for its event handling system.
@@ -110,8 +103,30 @@ Check the documentation of `@events` for more detail on event properties.
 
 ## Installation
 
-Install using `pip`:
+Install using [`pip`](https://pypi.org/project/pip/):
 
 ```console
 pip install cs-events
 ```
+
+## Roadmap
+
+C# also provides [event accessors](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/events/how-to-implement-custom-event-accessors):
+
+```C#
+public event EventHandler Changed
+{
+    add => ...
+    remove => ...
+}
+```
+
+This feature will be useful for wrapper classes that do not actually own the events, but need to forward the subscriptions to the underlying object that do own the event.
+
+Requirements:
+
+- `add` and `remove` accessors need a reference to `self`.
+- Event accessors need to match event declarations from interface (`Protocol`).
+- Event accessors are not directly invocable in C#. However it contradicts with the above requirement if implemented so (`Event` class is currently callable).
+
+The introduction of this new feature will likely be a breaking change, since the current signatures or structure of `Event` class will likely change.
