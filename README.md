@@ -1,14 +1,35 @@
 # C#-Style Event Handling Mechanism for Python
 
 <p align="center">
-    <img src="https://img.shields.io/pypi/v/cs-events" />
-    <img src="https://img.shields.io/pypi/status/cs-events" />
-    <img src="https://img.shields.io/pypi/pyversions/cs-events" />
-    <img src="https://img.shields.io/pypi/l/cs-events" />
+    <a href="https://pypi.org/project/cs-events/">
+        <img alt="pypi"
+        src="https://img.shields.io/pypi/v/cs-events" />
+    </a>
+    <a href="https://pypi.org/project/cs-events/">
+        <img alt="status"
+        src="https://img.shields.io/pypi/status/cs-events" />
+    </a>
+    <a href="https://www.python.org/downloads/">
+        <img alt="python"
+        src="https://img.shields.io/pypi/pyversions/cs-events" />
+    </a>
+    <a href="https://github.com/wise0704/python-cs-events/blob/master/LICENSE">
+        <img alt="license"
+        src="https://img.shields.io/pypi/l/cs-events" />
+    </a>
     <br/>
-    <img src="https://img.shields.io/github/actions/workflow/status/wise0704/python-cs-events/python-package.yml" />
-    <img src="https://img.shields.io/github/issues/wise0704/python-cs-events" />
-    <img src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events" />
+    <a href="https://github.com/wise0704/python-cs-events/actions/workflows/python-package.yml">
+        <img alt="build"
+        src="https://img.shields.io/github/actions/workflow/status/wise0704/python-cs-events/python-package.yml" />
+    </a>
+    <a href="https://github.com/wise0704/python-cs-events/issues">
+        <img alt="issues"
+        src="https://img.shields.io/github/issues/wise0704/python-cs-events" />
+    </a>
+    <a href="https://github.com/wise0704/python-cs-events/pulls">
+        <img alt="pull requests"
+        src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events" />
+    </a>
 </p>
 
 C# provides a very simple syntax using the observer pattern for its event handling system.
@@ -88,6 +109,8 @@ class EventPropertiesExample:
 Check the documentation of `@events` for more detail on event properties.
 
 ## Installation
+
+Install using `pip`:
 
 ```console
 pip install cs-events
