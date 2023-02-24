@@ -2,7 +2,7 @@
 Provides C#-style event handling mechanism.
 """
 
-from ._events import Event, events
+from ._event import Event, events
 
 __all__ = [
     "Event",

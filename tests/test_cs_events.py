@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from cs_events import Event, events
-from cs_events._events import _empty_event
+from cs_events._event import _empty_event
 
 
 def test_Event() -> None:
