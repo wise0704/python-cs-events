@@ -4,14 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cs-events"
-version = "0.1.0.post1"
 description = "C#-style event handling mechanism for Python"
 authors = [{ name = "Daniel Jeong", email = "wise0704@outlook.com" }]
 keywords = ["python", "event", "c#"]
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
-dynamic = ["dependencies"]
+dynamic = ["dependencies", "version"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -20,7 +19,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
-    "Topic :: Software Development",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Software Development :: Libraries",
     "Typing :: Typed",
 ]
@@ -38,4 +37,4 @@ pythonpath = "src"
 
 [tool.setuptools.dynamic]
 dependencies = { file = "requirements.txt" }
-# version = { attr = "cs_events.__version__" }
+version = { attr = "cs_events.__version__" }
