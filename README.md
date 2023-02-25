@@ -25,7 +25,7 @@
     src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events" /></a>
 </p>
 
-C# provides a very simple syntax using the observer pattern for its event handling system.
+C# provides a very simple syntax using the [observer pattern](https://en.wikipedia.org/wiki/Observer_pattern) for its event handling system.
 The aim of this project is to implement the pattern in python as similarly as possible.
 
 In C#, an "event" is a field or a property of the delegate type `EventHandler`.
@@ -38,14 +38,13 @@ So the `Event[P]` class is provided to mimic delegates:
 ```python
 from cs_events import Event
 
-on_change: Event[object, str] = Event()
+on_change = Event[object, str]()
 ```
 
 Handlers can subscribe to and unsubscribe from the event with the same syntax:
 
 ```python
-def event_handler(o: object, s: str) -> None:
-    ...
+def event_handler(o: object, s: str) -> None: ...
 
 on_change += event_handler
 on_change -= event_handler
@@ -54,7 +53,7 @@ on_change -= event_handler
 An event can be raised by simply invoking it with the arguments:
 
 ```python
-on_change(self, "value")
+on_change(obj, "value")
 ```
 
 Since `Event` acts just like a delegate from C#, it is not required to be bound to a class or an instance object.
@@ -66,8 +65,8 @@ An example class with event fields may look like this:
 class EventExample:
     def __init__(self) -> None:
         self.on_update: Event[str] = Event()
-        self.__value = ""
-    
+        self.__value: str = ""
+
     def update(self, value: str) -> None:
         if self.__value != value:
             self.__value = value
@@ -92,11 +91,11 @@ class EventFieldsExample:
 
 @events(properties=True)
 class EventPropertiesExample:
-    loaded: Event[int]
-    disposed: Event[[]]
+    closing: Event[CancelEventArgs]
+    closed: Event[[]]
 
     def __init__(self) -> None:
-        self._events = {}
+        self._events: dict[str, Event] = {}
 ```
 
 Check the documentation of `@events` for more detail on event properties.
@@ -123,10 +122,12 @@ public event EventHandler Changed
 
 This feature will be useful for wrapper classes that do not actually own the events, but need to forward the subscriptions to the underlying object that do own the event.
 
-Requirements:
+Goals:
 
 - `add` and `remove` accessors need a reference to `self`.
 - Event accessors need to match event declarations from interface (`Protocol`).
-- Event accessors are not directly invocable in C#. However it contradicts with the above requirement if implemented so (`Event` class is currently callable).
+  So the annotated accessor type should be compatible with `Event`.
+- Event accessors are not directly invocable in C#.
+  However it contradicts with the above requirement if implemented so (`Event` class is currently callable).
 
-The introduction of this new feature will likely be a breaking change, since the current signatures or structure of `Event` class will likely change.
+The introduction of this new feature will likely be a breaking change, since the current signatures or structure of the `Event` class and/or event properties via `@events(properties=True)` will likely change.
