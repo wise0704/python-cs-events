@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Protocol
+from typing import Any, Protocol, Union
 
 from ._event import Event
 
@@ -80,7 +80,7 @@ class EventHandlerCollection(Protocol):
             e(*args, **kwargs)
 
 
-_ListEntry = tuple[object, Event[...], "_ListEntry" | None]
+_ListEntry = tuple[object, Event[...], Union["_ListEntry", None]]
 
 
 class EventHandlerList(EventHandlerCollection):

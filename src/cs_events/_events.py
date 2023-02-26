@@ -163,16 +163,20 @@ def _create_events(cls: _T, prefix: str, collection: str, /) -> _T:
     if len(collection) > 2 and collection[:2] == "__" and collection[-2:] != "__":
         collection = f"_{cls.__name__}{collection}"
 
-    def create_event(name: str, /) -> event[...]: ...
+    locals = {}
     exec(
-        "def create_event(name, /):\n"
+        "def f(name, /):\n"
         "  def add(self, value, /):\n"
         f"    self.{collection}.add_handler(name, value)\n"
 
         "  def remove(self, value, /):\n"
         f"    self.{collection}.remove_handler(name, value)\n"
 
-        "  return event(lambda: (add, remove))\n")
+        "  return event(lambda: (add, remove))\n",
+        {"event": event},
+        locals
+    )
+    create_event: Callable[[str], event[...]] = locals["f"]
 
     for (name, T) in get_type_hints(cls).items():
         if name.startswith(prefix):

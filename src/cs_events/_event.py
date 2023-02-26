@@ -169,7 +169,7 @@ class event(Generic[P]):
     since the argument `self` cannot be supplied.
 
     Unlike event fields, an event property cannot be invoked directly.
-    Use the underlying event that the accessors point to instead. 
+    Use the underlying event that the accessors point to instead.
 
     Example::
 
