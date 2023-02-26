@@ -135,7 +135,7 @@ class EventPropertyExample:
     def __init__(self) -> None:
         self.__events = EventHandlerList()
     
-    def perform_change(key: str, value: object) -> None:
+    def perform_change(self, key: str, value: object) -> None:
         e = self.__events[self.__event_change]
         if e is not None:
             e(key, value)
@@ -152,7 +152,7 @@ class EventPropertyExample:
     def __init__(self) -> None:
         self.__events = EventHandlerList()
 
-    def perform_change(key: str, value: object) -> None:
+    def perform_change(self, key: str, value: object) -> None:
         self.__events.invoke("change", key, value)
 ```
 
