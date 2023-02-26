@@ -25,15 +25,16 @@ classifiers = [
 ]
 
 [project.urls]
-"GitHub" = "https://github.com/wise0704/python-cs-events"
+"Repository" = "https://github.com/wise0704/python-cs-events"
 "Issues" = "https://github.com/wise0704/python-cs-events/issues"
 
 [tool.pytest.ini_options]
 addopts = "-v --no-header"
 console_output_style = "count"
 python_files = "test_*.py"
-python_functions = "test_*"
+python_functions = "test_"
 pythonpath = "src"
+testpaths = "tests"
 
 [tool.setuptools.dynamic]
 dependencies = { file = "requirements.txt" }

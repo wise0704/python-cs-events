@@ -17,5 +17,5 @@ __all__ = [
     "EventHandlerList",
     "events",
 ]
-__version__ = "0.1.0.post1"
+__version__ = "0.2.0"
 __author__ = "Daniel Jeong"
