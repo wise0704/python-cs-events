@@ -1,6 +1,14 @@
-from typing import Protocol, Any
 from collections.abc import Callable
+from typing import Any, Protocol
+
 from ._event import Event
+
+
+__all__ = [
+    "EventHandlerCollection",
+    "EventHandlerList",
+    "EventHandlerDict",
+]
 
 
 class EventHandlerCollection(Protocol):

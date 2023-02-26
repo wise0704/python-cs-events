@@ -1,7 +1,7 @@
 import sys
 from collections.abc import Callable, Collection, Iterator
-from typing import (Any, Final, Literal, ParamSpec, Protocol, TypeVar, final,
-                    get_origin, get_type_hints, overload)
+from typing import Any, Generic, ParamSpec, final
+
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -9,18 +9,29 @@ else:
     from typing_extensions import Self
 
 
+__all__ = [
+    "accessors",
+    "event",
+    "Event",
+    "EventHandler",
+]
+
 # Python does not provide a void type, which is a useful feature in callbacks,
 # and is clearly different from None.
+# Comparison with TS:
+#     function foo(): void {} <==> def foo() -> None: pass
+#     let bar: () => void;    <==> bar: Callable[[], Any]
 void = None | Any
 
 P = ParamSpec("P")
 EventHandler = Callable[P, void]
+accessors = tuple[Callable[[Any, EventHandler[P]], void], Callable[[Any, EventHandler[P]], void]]
 
 
 @final
 class Event(Collection[EventHandler[P]]):
     """
-    Represents an event that handlers can subscribe to.
+    Represents an event delegate that handlers can subscribe to.
 
     The type argument specifies the event data parameters::
 
@@ -46,7 +57,7 @@ class Event(Collection[EventHandler[P]]):
 
     def __init__(self, *handlers: EventHandler[P]) -> None:
         """
-        Initializes a new instance of the Event class.
+        Initializes a new instance of the ``Event`` class.
 
         Args:
          - *handlers ((**P) -> void): List of handlers to subscribe to the event.
@@ -131,176 +142,89 @@ class Event(Collection[EventHandler[P]]):
             handler(*args, **kwargs)
 
 
-class _EmptyEvent(Event[...]):  # type: ignore
-    __slots__ = ()
+@final
+class event(Generic[P]):
+    """
+    A decorator used to declare an event property in a publisher class.
 
-    def __init__(self) -> None:
-        pass
+    The definition function must return a tuple of accessors ``(add, remove)``
+    each of type ``(Self, (**P) -> void) -> void``.
 
-    def __iadd__(self, handler: EventHandler[P], /) -> Event[P]:
-        return Event(handler)
+    The subscribe and unsubscribe operators::
 
-    def __isub__(self, handler: EventHandler[...], /) -> Self:
+        obj.event += handler
+        obj.event -= handler
+
+    will invoke the respective `add` and `remove` accessors with the arguments
+    `(obj, handler)`.
+
+    An event property is not bound to an instance object, thus it must be accessed as
+    an attribute of an object in order for the accessors to be invoked.
+    The following code::
+
+        e = obj.event
+        e += handler  # no effect on obj.event
+
+    has no effect on `obj.event` and will not call the `add` accessor,
+    since the argument `self` cannot be supplied.
+
+    Unlike event fields, an event property cannot be invoked directly.
+    Use the underlying event that the accessors point to instead. 
+
+    Example::
+
+        class Example:
+            # Infer event type from the accessor parameter type
+            @event
+            def item_added():
+                def add(self: Self, value: EventHandler[int, object]):
+                    ...
+                def remove(self: Self, value: EventHandler[int, object]):
+                    ...
+                return add, remove
+
+            # Infer event type from the accessors type
+            @event
+            def item_removed() -> accessors[int, object]:
+                def add(self: Self, value):
+                    ...
+                def remove(self: Self, value):
+                    ...
+                return add, remove
+
+            # Explicit event type
+            @event[int, object]
+            def item_changed():
+                def add(self: Self, value):
+                    ...
+                def remove(self: Self, value):
+                    ...
+                return add, remove
+    """
+
+    __slots__ = ("__add", "__remove")
+
+    def __init__(self, f: Callable[[], accessors[P]], /) -> None:
+        """
+        Initializes a new instance of the ``event`` class.
+
+        Args:
+            f (() -> accessors[P]): An event definition.
+        """
+        (self.__add, self.__remove) = f()
+
+    def __get__(self, instance: object, cls: type, /) -> Self:
         return self
 
-    def __contains__(self, handler: object, /) -> bool:
-        return False
+    def __set__(self, instance: object, value: tuple[EventHandler[P], bool], /) -> None:
+        (handler, add) = value
+        if add:
+            self.__add(instance, handler)
+        else:
+            self.__remove(instance, handler)
 
-    def __iter__(self) -> Iterator[EventHandler[...]]:
-        return iter(())
+    def __iadd__(self, handler: EventHandler[P], /) -> tuple[EventHandler[P], bool]:
+        return (handler, True)
 
-    def __len__(self) -> int:
-        return 0
-
-    def __call__(self, *args, **kwargs) -> None:
-        pass
-
-
-_empty_event: Final = _EmptyEvent()
-
-
-class _Events(Protocol):
-    _events: dict[str, Event[...]]
-
-
-_T = TypeVar("_T", bound=type)
-_TEvents = TypeVar("_TEvents", bound=type[_Events])
-
-
-@overload
-def events(cls: _T, /) -> _T: ...
-
-
-@overload
-def events(*, prefix: str = "", properties: Literal[False] = ...) -> Callable[[_T], _T]: ...
-
-
-@overload
-def events(*, prefix: str = "", properties: Literal[True]) -> Callable[[_TEvents], _TEvents]: ...
-
-
-def events(cls: _T | None = None, /, *, prefix: str = "", properties: bool = False) -> _T | Callable[[_T], _T]:
-    """
-    Adds event fields/properties based on the annotations defined in the class.
-
-    If this decorator is used to add event fields (`properties=False`), then::
-
-        @events
-        class EventFieldsExample:
-            on_changed: Event[object, str]
-            on_input: Event[int]
-
-    is equivalent to::
-
-        class EventFieldsExample:
-            def __init__(self) -> None:
-                self.on_changed: Event[object, str] = Event()
-                self.on_input: Event[int] = Event()
-
-    Event properties require a dictionary field `_events`::
-
-        @events(properties=True)
-        class EventPropertiesExample:
-            on_changed: Event[object, str]
-            on_input: Event[int]
-
-            def __init__(self) -> None:
-                self._events: dict[str, Event[...]] = {}
-
-    If your class defines a large number of events, the storage cost of one field per event might not be acceptable.
-    For those situations, event properties can be used to store the events lazily in a dictionary.
-
-    Event properties are slower than event fields due to the additional dictionary structure.
-    The trade-off is between memory and speed.
-    If your class defines many events that are infrequently raised, you'll want to use event properties.
-
-    Args:
-     - cls (type): A class with event annotations.
-     - prefix (str, optional): Only process annotations that start with the prefix. Defaults to "".
-     - properties (bool, optional): Whether to create event properties instead of fields. Defaults to False.
-
-    Returns:
-        (type): cls
-    """
-
-    if cls is None:
-        if properties:
-            return lambda cls: _create_events(cls, prefix)
-        return lambda cls: _create_init(cls, prefix)
-
-    if properties:
-        return _create_events(cls, prefix)
-    return _create_init(cls, prefix)
-
-
-def _create_init(cls: _T, prefix: str, /) -> _T:
-    body_lines: list[str] = []
-
-    for (name, T) in get_type_hints(cls).items():
-        if name.startswith(prefix):
-            if (get_origin(T) or T) is Event:
-                body_lines.append(f"self.{name} = Event()")
-
-    if not body_lines:
-        return cls
-
-    globals: dict[str, object] = {"Event": Event}
-    locals: dict[str, Callable[..., None]] = {}
-
-    replace = "__init__" in vars(cls)
-
-    if replace:
-        globals["__init__"] = cls.__init__
-        body_lines.append("__init__(self, *args, **kwargs)")
-    else:
-        globals["__class__"] = cls
-        body_lines.insert(0, "super(__class__, self).__init__(*args, **kwargs)")
-
-    body = "\n".join(f"\t{line}" for line in body_lines)
-    exec(f"def __init__(self, *args, **kwargs) -> None:\n{body}", globals, locals)
-    func = locals["__init__"]
-
-    if replace:
-        for attr in (
-            "__module__",
-            "__name__",
-            "__qualname__",
-            "__doc__",
-            "__annotations__",
-            "__dict__"
-        ):
-            try:
-                value = getattr(cls.__init__, attr)
-            except AttributeError:
-                pass
-            else:
-                setattr(func, attr, value)
-    else:
-        func.__module__ = cls.__module__
-        func.__name__ = "__init__"
-        func.__qualname__ = f"{cls.__qualname__}.__init__"
-
-    cls.__init__ = func
-    return cls
-
-
-def _create_events(cls: _TEvents, prefix: str, /) -> _TEvents:
-    def create_event(name: str, /) -> property:
-        def fget(self: _Events, /) -> Event[...]:
-            return self._events.get(name, _empty_event)
-
-        def fset(self: _Events, value: Event[...], /) -> None:
-            if self._events.setdefault(name, value) is not value:
-                raise AttributeError(f"can't set attribute '{name}'", name=name, obj=self)
-
-        def fdel(self: _Events, /) -> None:
-            if name in self._events:
-                del self._events[name]
-
-        return property(fget, fset, fdel)
-
-    for (name, T) in get_type_hints(cls).items():
-        if name.startswith(prefix):
-            if (get_origin(T) or T) is Event:
-                setattr(cls, name, create_event(name[len(prefix)]))
-    return cls
+    def __isub__(self, handler: EventHandler[P], /) -> tuple[EventHandler[P], bool]:
+        return (handler, False)
