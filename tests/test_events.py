@@ -71,8 +71,6 @@ def test_events_properties() -> None:
         def events(self) -> EventHandlerCollection:
             return self.__events
 
-    print(vars(TestClass))
-
     assert isinstance(TestClass.event1, event)
     assert isinstance(TestClass.event2, event)
     assert isinstance(TestClass.event3, event)
@@ -87,8 +85,8 @@ def test_events_properties() -> None:
     assert obj.events["2"] is None
     assert obj.events["3"] is None
 
-    def event1_handler(_: int) -> None:
-        ...
+    def event1_handler(_: int) -> None: ...
+    def event2_handler(_0: str, _1: str) -> None: ...
 
     obj.event1 += event1_handler
 
@@ -102,4 +100,19 @@ def test_events_properties() -> None:
     assert (e := obj.events["1"]) is not None
     assert len(e) == 0
     assert obj.events["2"] is None
+    assert obj.events["3"] is None
+
+    obj.event2 -= event2_handler
+
+    assert (e := obj.events["1"]) is not None
+    assert len(e) == 0
+    assert obj.events["2"] is None
+    assert obj.events["3"] is None
+
+    obj.event2 += event2_handler
+
+    assert (e := obj.events["1"]) is not None
+    assert len(e) == 0
+    assert (e := obj.events["2"]) is not None
+    assert len(e) == 1
     assert obj.events["3"] is None

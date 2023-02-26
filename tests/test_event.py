@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from cs_events import Event
+from cs_events import Event, event
 
 
 def test_Event() -> None:
@@ -65,3 +65,26 @@ def test_Event_invoke() -> None:
     args, kwargs = (12345, "hello", [True, False]), {"a": 0, "b": None}
     handler1.assert_called_once_with(*args, **kwargs)
     handler2.assert_called_once_with(*args, **kwargs)
+
+
+def test_event() -> None:
+    add_mock = Mock()
+    remove_mock = Mock()
+
+    class TestClass:
+        @event[str]
+        def event1():
+            return add_mock, remove_mock
+
+    def handler(_: str) -> None: ...
+
+    obj = TestClass()
+
+    add_mock.assert_not_called()
+    remove_mock.assert_not_called()
+
+    obj.event1 += handler
+    add_mock.assert_called_once_with(obj, handler)
+
+    obj.event1 -= handler
+    remove_mock.assert_called_once_with(obj, handler)
