@@ -77,8 +77,7 @@ obj.on_update += lambda value: print(f"obj.{value=}")
 obj.update("new value")
 ```
 
-A class decorator `@events` is provided as a shortcut for event fields and
-properties:
+A class decorator `@events` is provided as a shortcut for event fields:
 
 ```python
 from cs_events import Event, events
@@ -88,17 +87,74 @@ class EventFieldsExample:
     item_added: Event[object]
     item_removed: Event[object]
     item_updated: Event[object, str]
-
-@events(properties=True)
-class EventPropertiesExample:
-    closing: Event[CancelEventArgs]
-    closed: Event[[]]
-
-    def __init__(self) -> None:
-        self._events: dict[str, Event] = {}
 ```
 
-Check the documentation of `@events` for more detail on event properties.
+C# also provides event properties with `add` and `remove` accessors:
+
+```C#
+public event EventHandler<T> Changed
+{
+    add => ...
+    remove => ...
+}
+```
+
+This feature is useful for classes that do not actually own the events, but need to forward the subscriptions to the underlying object that do own the events.
+
+The `@event[P]` decorator and the `accessors[P]` type are provided to support this feature:
+
+```python
+from cs_events import accessors, event, EventHandler
+
+class EventPropertyExample:
+    @event[str, object]
+    def on_change() -> accessors[str, object]:
+        def add(self: Self, value: EventHandler[str, object]) -> None:
+            ...
+        def remove(self: Self, value: EventHandler[str, object]) -> None:
+            ...
+        return add, remove
+```
+
+Furthermore, the `EventHandlerCollection` interface is provided to support the functionalities of `System.ComponentModel.EventHandlerList` class from C#, along with the two implementations `EventHandlerList` and `EventHandlerDict` using a linked list and a dictionary respectively. The behaviour of `EventHandlerList` is exactly the same as of its counterpart from C#.
+
+A typical usage of `EventHandlerList` in C# can be translated directly into the python code:
+
+```python
+class EventPropertyExample:
+    __event_change: Final = object()
+
+    @event  # [str, object] is inferred
+    def on_change():  # -> accessors[str, object] is inferred
+        def add(self: Self, value: EventHandler[str, object]) -> None:
+            self.__events.add_handler(self.__event_change, value)
+        def remove(self: Self, value: EventHandler[str, object]) -> None:
+            self.__events.remove_handler(self.__event_change, value)
+        return add, remove
+    
+    def __init__(self) -> None:
+        self.__events = EventHandlerList()
+    
+    def perform_change(key: str, value: object) -> None:
+        e = self.__events[self.__event_change]
+        if e is not None:
+            e(key, value)
+```
+
+The class decorator `@events` also provides a shortcut for event properties.
+The above code can be shortened to:
+
+```python
+@events(collection="__events", prefix="on_")
+class EventPropertyExample:
+    on_change: event[object, str]
+
+    def __init__(self) -> None:
+        self.__events = EventHandlerList()
+
+    def perform_change(key: str, value: object) -> None:
+        self.__events.invoke("change", key, value)
+```
 
 ## Installation
 
@@ -107,27 +163,3 @@ Install using [`pip`](https://pypi.org/project/pip/):
 ```console
 pip install cs-events
 ```
-
-## Roadmap
-
-C# also provides [event accessors](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/events/how-to-implement-custom-event-accessors):
-
-```C#
-public event EventHandler Changed
-{
-    add => ...
-    remove => ...
-}
-```
-
-This feature will be useful for wrapper classes that do not actually own the events, but need to forward the subscriptions to the underlying object that do own the event.
-
-Goals:
-
-- `add` and `remove` accessors need a reference to `self`.
-- Event accessors need to match event declarations from interface (`Protocol`).
-  So the annotated accessor type should be compatible with `Event`.
-- Event accessors are not directly invocable in C#.
-  However it contradicts with the above requirement if implemented so (`Event` class is currently callable).
-
-The introduction of this new feature will likely be a breaking change, since the current signatures or structure of the `Event` class and/or event properties via `@events(properties=True)` will likely change.
