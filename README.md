@@ -3,26 +3,29 @@
 <p align="center">
     <a href="https://pypi.org/project/cs-events/">
     <img alt="pypi"
-    src="https://img.shields.io/pypi/v/cs-events" /></a>
+    src="https://img.shields.io/pypi/v/cs-events?logo=pypi&logoColor=EEE" /></a>
     <a href="https://pypi.org/project/cs-events/">
     <img alt="status"
     src="https://img.shields.io/pypi/status/cs-events" /></a>
+    <a href="https://pypi.org/project/cs-events/">
+    <img alt="python"
+    src="https://img.shields.io/pypi/dd/cs-events" /></a>
     <a href="https://www.python.org/downloads/">
     <img alt="python"
-    src="https://img.shields.io/pypi/pyversions/cs-events" /></a>
+    src="https://img.shields.io/pypi/pyversions/cs-events?logo=python&logoColor=yellow" /></a>
     <a href="https://github.com/wise0704/python-cs-events/blob/master/LICENSE">
     <img alt="license"
-    src="https://img.shields.io/pypi/l/cs-events" /></a>
+    src="https://img.shields.io/pypi/l/cs-events?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlPSIjRkZGIj48cGF0aCBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMiIgZD0ibTMgNiAzIDFtMCAwLTMgOWE1LjAwMiA1LjAwMiAwIDAgMCA2LjAwMSAwTTYgN2wzIDlNNiA3bDYtMm02IDIgMy0xbS0zIDEtMyA5YTUuMDAyIDUuMDAyIDAgMCAwIDYuMDAxIDBNMTggN2wzIDltLTMtOS02LTJtMC0ydjJtMCAxNlY1bTAgMTZIOW0zIDBoMyIvPjwvc3ZnPg==" /></a>
     <br/>
     <a href="https://github.com/wise0704/python-cs-events/actions/workflows/python-package.yml">
     <img alt="build"
-    src="https://img.shields.io/github/actions/workflow/status/wise0704/python-cs-events/python-package.yml" /></a>
+    src="https://img.shields.io/github/actions/workflow/status/wise0704/python-cs-events/python-package.yml?logo=pytest" /></a>
     <a href="https://github.com/wise0704/python-cs-events/issues">
     <img alt="issues"
-    src="https://img.shields.io/github/issues/wise0704/python-cs-events" /></a>
+    src="https://img.shields.io/github/issues/wise0704/python-cs-events?logo=github" /></a>
     <a href="https://github.com/wise0704/python-cs-events/pulls">
     <img alt="pull requests"
-    src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events" /></a>
+    src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events?logo=github" /></a>
 </p>
 
 C# provides a very simple syntax using the [observer pattern](https://en.wikipedia.org/wiki/Observer_pattern) for its event handling system.
