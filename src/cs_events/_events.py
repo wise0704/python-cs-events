@@ -181,5 +181,5 @@ def _create_events(cls: _T, prefix: str, collection: str, /) -> _T:
     for (name, T) in get_type_hints(cls).items():
         if name.startswith(prefix):
             if (get_origin(T) or T) is event:
-                setattr(cls, name, create_event(name[len(prefix)]))
+                setattr(cls, name, create_event(name.removeprefix(prefix)))
     return cls

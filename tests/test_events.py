@@ -61,7 +61,7 @@ def test_events_properties() -> None:
     @events(collection="__events", prefix="event")
     class TestClass:
         event1: event[int]
-        event2: event[str, str]
+        event20: event[str, str]
         event3: event[...]
 
         def __init__(self) -> None:
@@ -72,47 +72,47 @@ def test_events_properties() -> None:
             return self.__events
 
     assert isinstance(TestClass.event1, event)
-    assert isinstance(TestClass.event2, event)
+    assert isinstance(TestClass.event20, event)
     assert isinstance(TestClass.event3, event)
 
     obj = TestClass()
 
     assert isinstance(obj.event1, event)
-    assert isinstance(obj.event2, event)
+    assert isinstance(obj.event20, event)
     assert isinstance(obj.event3, event)
 
     assert obj.events["1"] is None
-    assert obj.events["2"] is None
+    assert obj.events["20"] is None
     assert obj.events["3"] is None
 
     def event1_handler(_: int) -> None: ...
-    def event2_handler(_0: str, _1: str) -> None: ...
+    def event20_handler(_0: str, _1: str) -> None: ...
 
     obj.event1 += event1_handler
 
     assert (e := obj.events["1"]) is not None
     assert len(e) == 1
-    assert obj.events["2"] is None
+    assert obj.events["20"] is None
     assert obj.events["3"] is None
 
     obj.event1 -= event1_handler
 
     assert (e := obj.events["1"]) is not None
     assert len(e) == 0
-    assert obj.events["2"] is None
+    assert obj.events["20"] is None
     assert obj.events["3"] is None
 
-    obj.event2 -= event2_handler
+    obj.event20 -= event20_handler
 
     assert (e := obj.events["1"]) is not None
     assert len(e) == 0
-    assert obj.events["2"] is None
+    assert obj.events["20"] is None
     assert obj.events["3"] is None
 
-    obj.event2 += event2_handler
+    obj.event20 += event20_handler
 
     assert (e := obj.events["1"]) is not None
     assert len(e) == 0
-    assert (e := obj.events["2"]) is not None
+    assert (e := obj.events["20"]) is not None
     assert len(e) == 1
     assert obj.events["3"] is None
