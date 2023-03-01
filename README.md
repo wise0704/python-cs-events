@@ -7,9 +7,9 @@
     <a href="https://pypi.org/project/cs-events/">
     <img alt="status"
     src="https://img.shields.io/pypi/status/cs-events" /></a>
-    <a href="https://pypi.org/project/cs-events/">
+    <a href="https://pypistats.org/packages/cs-events">
     <img alt="python"
-    src="https://img.shields.io/pypi/dd/cs-events" /></a>
+    src="https://img.shields.io/pypi/dm/cs-events" /></a>
     <a href="https://www.python.org/downloads/">
     <img alt="python"
     src="https://img.shields.io/pypi/pyversions/cs-events?logo=python&logoColor=yellow" /></a>
