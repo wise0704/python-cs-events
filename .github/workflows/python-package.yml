@@ -15,11 +15,6 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11"]
 
-    env:
-      POETRY_VIRTUALENVS_IN_PROJECT: false
-      POETRY_VIRTUALENVS_OPTIONS_NO_PIP: true
-      POETRY_VIRTUALENVS_OPTIONS_NO_SETUPTOOLS: true
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -34,7 +29,12 @@ jobs:
           pip install poetry==1.4.0
 
       - name: Install dependencies with poetry
+        env:
+          POETRY_VIRTUALENVS_IN_PROJECT: false
+          POETRY_VIRTUALENVS_OPTIONS_NO_PIP: true
+          POETRY_VIRTUALENVS_OPTIONS_NO_SETUPTOOLS: true
         run: |
+          poetry check
           poetry install
 
       - name: Lint with flake8
