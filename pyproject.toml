@@ -1,16 +1,16 @@
 [build-system]
-requires = ["setuptools>=61.0.0"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "cs-events"
+version = "0.2.1"
 description = "C#-style event handling mechanism for Python"
-authors = [{ name = "Daniel Jeong", email = "wise0704@outlook.com" }]
+authors = ["Daniel Jeong <wise0704@outlook.com>"]
 keywords = ["python", "event", "c#"]
 readme = "README.md"
-license = { text = "MIT" }
-requires-python = ">=3.10"
-dynamic = ["dependencies", "version"]
+license = "MIT"
+repository = "https://github.com/wise0704/python-cs-events"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -24,8 +24,16 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-[project.urls]
-"Repository" = "https://github.com/wise0704/python-cs-events"
+[tool.poetry.dependencies]
+python = "^3.10"
+typing-extensions = { version = "^4.5.0", python = "<3.11" }
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+autopep8 = "^2.0.1"
+flake8 = "^6.0.0"
+
+[tool.poetry.urls]
 "Issues" = "https://github.com/wise0704/python-cs-events/issues"
 
 [tool.pytest.ini_options]
@@ -33,9 +41,4 @@ addopts = "-v --no-header"
 console_output_style = "count"
 python_files = "test_*.py"
 python_functions = "test_"
-pythonpath = "src"
 testpaths = "tests"
-
-[tool.setuptools.dynamic]
-dependencies = { file = "requirements.txt" }
-version = { attr = "cs_events.__version__" }
