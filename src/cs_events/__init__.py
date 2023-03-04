@@ -18,4 +18,4 @@ __all__ = [
     "events",
 ]
 __author__ = "Daniel Jeong"
-__version__ = "0.2.1"
+__version__ = "0.2.2"
