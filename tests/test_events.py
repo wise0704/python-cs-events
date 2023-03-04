@@ -130,3 +130,23 @@ def test_events_properties() -> None:
     args, kwargs = (83261, "hi", [0, False]), {"a": 1, "b": None}
     event3_handler1.assert_called_once_with(*args, **kwargs)
     event3_handler2.assert_called_once_with(*args, **kwargs)
+
+
+def test_events_properties_private() -> None:
+    @events(collection="__events")
+    class _Test:
+        e: event[[]]
+
+        def __init__(self) -> None:
+            self.__events = EventHandlerList()
+
+    _Test().e += lambda: None
+
+    @events(collection="__events")
+    class __Test:
+        e: event[[]]
+
+        def __init__(self) -> None:
+            self.__events = EventHandlerList()
+
+    __Test().e += lambda: None
