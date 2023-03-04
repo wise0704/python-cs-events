@@ -161,7 +161,7 @@ def _create_init(cls: _T, prefix: str, /) -> _T:
 def _create_events(cls: _T, prefix: str, collection: str, /) -> _T:
     # Assume collection is a valid identifier
     if len(collection) > 2 and collection[:2] == "__" and collection[-2:] != "__":
-        collection = f"_{cls.__name__}{collection}"
+        collection = f"_{cls.__name__.lstrip('_')}{collection}"
 
     locals = {}
     exec(
