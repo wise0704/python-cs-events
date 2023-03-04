@@ -116,3 +116,17 @@ def test_events_properties() -> None:
     assert (e := obj.events["20"]) is not None
     assert len(e) == 1
     assert obj.events["3"] is None
+
+    event3_handler1 = Mock()
+    event3_handler2 = Mock()
+    obj.event3 += event3_handler1
+    obj.event3 += event3_handler2
+
+    assert (e := obj.events["3"]) is not None
+    assert list(e) == [event3_handler1, event3_handler2]
+
+    obj.events.invoke("3", 83261, "hi", [0, False], a=1, b=None)
+
+    args, kwargs = (83261, "hi", [0, False]), {"a": 1, "b": None}
+    event3_handler1.assert_called_once_with(*args, **kwargs)
+    event3_handler2.assert_called_once_with(*args, **kwargs)

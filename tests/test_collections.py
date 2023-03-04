@@ -1,3 +1,4 @@
+from unittest.mock import Mock
 import pytest
 
 from cs_events import Event, EventHandlerCollection, EventHandlerDict, EventHandlerList
@@ -42,3 +43,23 @@ def test_EventHandleCollection(collection: EventHandlerCollection) -> None:
     assert len(e) == 2
     assert isinstance(e := collection[key2], Event)
     assert len(e) == 1
+
+    mock1 = Mock()
+    mock2 = Mock()
+
+    collection.add_handler(key1, mock1)
+    collection.add_handler(key1, mock2)
+    collection.add_handler(key1, mock1)
+
+    assert (e := collection[key1])
+    assert list(e) == [delegate, delegate, mock1, mock2, mock1]
+
+    collection.remove_handler(key1, delegate)
+    collection.remove_handler(key1, delegate)
+    collection.remove_handler(key1, mock1)
+
+    assert list(e) == [mock1, mock2]
+
+    collection.invoke(key1, "TEST")
+    mock1.assert_called_once_with("TEST")
+    mock2.assert_called_once_with("TEST")
