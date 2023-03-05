@@ -1,11 +1,12 @@
 from collections.abc import Callable
 from typing import TypeVar, get_origin, get_type_hints, overload
 
-from ._event import Event, event
+from ._event import Event, accessors, event
 
 
 __all__ = [
     "events",
+    "event_key",
 ]
 
 
@@ -23,6 +24,8 @@ def events(*, prefix: str = "", collection: str | None = None) -> Callable[[_T],
 def events(cls: _T | None = None, /, *, prefix: str = "", collection: str | None = None) -> _T | Callable[[_T], _T]:
     """
     Adds event fields or properties based on the annotations defined in the class and the specified prefix.
+
+    ### Event Fields
 
     If this decorator is used to add event fields (``collection=None``),
     then field annotations of type ``Event`` are turned into field assignments in a generated ``__init__`` method.
@@ -44,6 +47,8 @@ def events(cls: _T | None = None, /, *, prefix: str = "", collection: str | None
                 super().__init__(*args, **kwargs)
                 self.on_change: Event[object, str] = Event()
                 self.on_input: Event[int] = Event()
+
+    ### Event Properties
 
     Event properties require ``collection`` to be set to the attribute name of an ``EventHandlerCollection``.
     Field annotations of type ``event`` (NOT ``Event``) are turned into event property definitions,
@@ -163,23 +168,53 @@ def _create_events(cls: _T, prefix: str, collection: str, /) -> _T:
     if len(collection) > 2 and collection[:2] == "__" and collection[-2:] != "__":
         collection = f"_{cls.__name__.lstrip('_')}{collection}"
 
-    locals = {}
+    ns = {}
     exec(
-        "def f(name, /):\n"
-        "  def add(self, value, /):\n"
-        f"    self.{collection}.add_handler(name, value)\n"
+        "def f(key, /):\n"
+        " def add(self, value, /):\n"
+        f"  self.{collection}.add_handler(key, value)\n"
 
-        "  def remove(self, value, /):\n"
-        f"    self.{collection}.remove_handler(name, value)\n"
+        " def remove(self, value, /):\n"
+        f"  self.{collection}.remove_handler(key, value)\n"
 
-        "  return event(lambda: (add, remove))\n",
-        {"event": event},
-        locals
+        " return (add, remove)\n",
+        ns
     )
-    create_event: Callable[[str], event[...]] = locals["f"]
+    create_accessors: Callable[[str], accessors[...]] = ns["f"]
 
     for (name, T) in get_type_hints(cls).items():
         if name.startswith(prefix):
             if (get_origin(T) or T) is event:
-                setattr(cls, name, create_event(name.removeprefix(prefix)))
+                # Use the key if defined
+                key = getattr(cls, name, name.removeprefix(prefix))
+                setattr(cls, name, event(create_accessors(key)))
     return cls
+
+
+# TODO: Find a better name
+def event_key(key: object, /) -> event[...]:
+    """
+    Sets the key to use for event properties created with ``@events(collections=...)``.
+
+    Typically, empty objects are used as keys to avoid allocating strings.
+
+    Example::
+
+        @events(collection="__events")
+        class EventKeyExample:
+            __event_changing: Final = object()
+            __event_changed: Final = object()
+
+            changing: event[str] = event_key(__event_changing)
+            changed: event[str] = event_key(__event_changed)
+
+            def __init__(self) -> None:
+                self.__events = EventHandlerList()
+
+    Args:
+     - key (object): A key for the event handler collection to use.
+
+    Returns:
+        (event[...]): A hint for the ``@events`` decorator to use the specified key instead.
+    """
+    return key  # type: ignore

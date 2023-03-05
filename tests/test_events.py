@@ -2,7 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from cs_events import Event, EventHandlerCollection, EventHandlerList, event, events
+from cs_events import Event, EventHandlerCollection, EventHandlerList, event, events, event_key
 
 
 def test_events_field() -> None:
@@ -150,3 +150,32 @@ def test_events_properties_private() -> None:
             self.__events = EventHandlerList()
 
     __Test().e += lambda: None
+
+
+def test_events_properties_key() -> None:
+    @events(collection="events")
+    class Test:
+        test1: event[[]] = event_key(_event_test1 := object())
+        test2: event[str] = event_key(_event_test2 := object())
+
+        def __init__(self) -> None:
+            self.events = EventHandlerList()
+
+    t = Test()
+    t.events.add_handler = Mock()
+    t.events.remove_handler = Mock()
+
+    def handler1() -> None: ...
+    def handler2(_: str) -> None: ...
+
+    t.test1 += handler1
+    t.events.add_handler.assert_called_once_with(Test._event_test1, handler1)
+
+    t.test1 -= handler1
+    t.events.remove_handler.assert_called_once_with(Test._event_test1, handler1)
+
+    t.test2 -= handler2
+    t.events.remove_handler.assert_called_with(Test._event_test2, handler2)
+
+    t.test2 += handler2
+    t.events.add_handler.assert_called_with(Test._event_test2, handler2)

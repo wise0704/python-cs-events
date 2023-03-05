@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Callable, Collection, Iterator
-from typing import Any, Generic, ParamSpec, final
+from typing import Any, Generic, ParamSpec, final, overload
 
 
 if sys.version_info >= (3, 11):
@@ -22,8 +22,8 @@ __all__ = [
 #     function foo(): void {} <==> def foo() -> None: pass
 #     let bar: () => void;    <==> bar: Callable[[], Any]
 void = None | Any
-
 P = ParamSpec("P")
+
 EventHandler = Callable[P, void]
 accessors = tuple[Callable[[Any, EventHandler[P]], void], Callable[[Any, EventHandler[P]], void]]
 
@@ -48,7 +48,7 @@ class Event(Collection[EventHandler[P]]):
         event(...)
 
     Type Args:
-     - P (ParamSpec): Event data parameter specification.
+     - **P (ParamSpec): Event data parameter specification.
     """
 
     __slots__ = ("__handlers")
@@ -204,14 +204,21 @@ class event(Generic[P]):
 
     __slots__ = ("__add", "__remove")
 
-    def __init__(self, f: Callable[[], accessors[P]], /) -> None:
+    @overload
+    def __init__(self, definition: Callable[[], accessors[P]], /) -> None: ...
+
+    @overload
+    def __init__(self, accessors: accessors[P], /) -> None: ...
+
+    def __init__(self, x: Callable[[], accessors[P]] | accessors[P], /) -> None:
         """
         Initializes a new instance of the ``event`` class.
 
         Args:
-            f (() -> accessors[P]): An event definition.
+         - definition (() -> accessors[P]): An event definition returning a tuple of add and remove accessors.
+         - accessors (accessors[P]): A tuple of add and remove accessors.
         """
-        (self.__add, self.__remove) = f()
+        (self.__add, self.__remove) = x() if callable(x) else x
 
     def __get__(self, instance: object, cls: type, /) -> Self:
         return self

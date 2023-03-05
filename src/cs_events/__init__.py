@@ -4,11 +4,12 @@ Provides C#-style event handling mechanism.
 
 from ._collections import EventHandlerCollection, EventHandlerDict, EventHandlerList
 from ._event import Event, EventHandler, accessors, event
-from ._events import events
+from ._events import events, event_key
 
 
 __all__ = [
     "accessors",
+    "event_key",
     "event",
     "Event",
     "EventHandler",
