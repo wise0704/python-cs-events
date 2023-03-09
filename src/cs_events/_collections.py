@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Protocol, Union
+from typing import Any, Protocol, Union, runtime_checkable
 
 from ._event import Event
 
@@ -11,6 +11,7 @@ __all__ = [
 ]
 
 
+@runtime_checkable
 class EventHandlerCollection(Protocol):
     """
     Provides a collection of event handler delegates.
@@ -24,7 +25,7 @@ class EventHandlerCollection(Protocol):
          - key (object): A key to find in the list.
 
         Returns:
-            (Event[...] | None): The event for the specified key, or `None` if an event does not exist.
+            (Event[...]?): The event for the specified key, or ``None`` if an event does not exist.
         """
 
         ...
@@ -58,19 +59,15 @@ class EventHandlerCollection(Protocol):
 
         Equivalent to::
 
-        ```
-        e = events[key]
-        if e is not None:
-            e(...)
-        ```
+            e = events[key]
+            if e is not None:
+                e(...)
 
         This method is provided as a shortcut to above,
         since python does not have null-conditional operators::
 
-        ```
-        events[key]?.__call__(...)  # C# style func?.Invoke(...)
-        events[key]?.(...)  # JavaScript style func?.(...)
-        ```
+            events[key]?.__call__(...)  # C# style func?.Invoke(...)
+            events[key]?.(...)  # JavaScript style func?.(...)
 
         Args:
          - key (object): A key that owns the event.
@@ -92,7 +89,7 @@ class EventHandlerList(EventHandlerCollection):
 
     def __init__(self) -> None:
         """
-        Initializes a new instance of the `EventHandlerList` class.
+        Initializes a new instance of the ``EventHandlerList`` class.
         """
 
         self.__head: _ListEntry | None = None
@@ -121,7 +118,7 @@ class EventHandlerDict(EventHandlerCollection):
 
     def __init__(self) -> None:
         """
-        Initializes a new instance of the `EventHandlerDict` class.
+        Initializes a new instance of the ``EventHandlerDict`` class.
         """
 
         self.__dict: dict[object, Event[...]] = {}

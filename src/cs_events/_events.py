@@ -1,6 +1,8 @@
 from collections.abc import Callable
+from functools import update_wrapper
 from typing import TypeVar, get_origin, get_type_hints, overload
 
+from ._collections import EventHandlerCollection
 from ._event import Event, accessors, event
 
 
@@ -18,48 +20,48 @@ def events(cls: _T, /) -> _T: ...
 
 
 @overload
-def events(*, prefix: str = "", collection: str | None = None) -> Callable[[_T], _T]: ...
+def events(*, collection: str | None = ...) -> Callable[[_T], _T]: ...
 
 
-def events(cls: _T | None = None, /, *, prefix: str = "", collection: str | None = None) -> _T | Callable[[_T], _T]:
+def events(cls: _T | None = None, /, *, collection: str | None = None) -> _T | Callable[[_T], _T]:
     """
-    Adds event fields or properties based on the annotations defined in the class and the specified prefix.
+    Adds event fields and/or properties based on the annotations defined in the class.
 
     ### Event Fields
 
-    If this decorator is used to add event fields (``collection=None``),
-    then field annotations of type ``Event`` are turned into field assignments in a generated ``__init__`` method.
-    The ``__init__`` method will call the original ``__init__`` method at the end of its body if defined,
-    or call ``super().__init__`` at the beginning of its body otherwise.
+    Field annotations of type ``Event`` are turned into field assignments in a generated ``__init__`` method.
+    The ``__init__`` method will execute the original ``__init__`` method before the assignments if defined,
+    or call ``super().__init__`` otherwise.
 
     Example::
 
-        @events(prefix="on_")
+        @events
         class EventFieldsExample:
-            on_change: Event[object, str]
-            on_input: Event[int]
-            ignored: Event[[]]
+            added: Event[object]
+            removed: Event[object]
 
     is equivalent to::
 
         class EventFieldsExample:
             def __init__(self, *args, **kwargs) -> None:
                 super().__init__(*args, **kwargs)
-                self.on_change: Event[object, str] = Event()
-                self.on_input: Event[int] = Event()
+                self.added: Event[object] = Event()
+                self.removed: Event[object] = Event()
 
     ### Event Properties
 
-    Event properties require ``collection`` to be set to the attribute name of an ``EventHandlerCollection``.
-    Field annotations of type ``event`` (NOT ``Event``) are turned into event property definitions,
-    using the collection attribute provided and the field name without ``prefix`` as the key.
+    Field annotations of type ``event`` are turned into event property definitions.
+    The add and remove accessors will simply call ``add_handler`` and ``remove_handler`` on the
+    specified collection, with the attribute name as the key by default.
+    The collection can be specified either by passing the attribute name of an ``EventHandlerCollection`` object
+    as the ``collection`` argument, or by a field annotation of a subtype of ``EventHandlerCollection``.
 
     Example::
 
-        @events(collection="__events", prefix="on_")
+        @events(collection="__events")
         class EventPropertiesExample:
-            on_change: event[object, str]
-            on_input: event[int]
+            closing: event[CancelEventArgs]
+            closed: event[[]]
 
             def __init__(self) -> None:
                 self.__events = EventHandlerList()
@@ -67,20 +69,20 @@ def events(cls: _T | None = None, /, *, prefix: str = "", collection: str | None
     is equivalent to::
 
         class EventPropertiesExample:
-            @event[object, str]
-            def on_change():
+            @event[CancelEventArgs]
+            def closing():
                 def add(self, value):
-                    self.__events.add_handler("change", value)
+                    self.__events.add_handler("closing", value)
                 def remove(self, value):
-                    self.__events.remove_handler("change", value)
+                    self.__events.remove_handler("closing", value)
                 return add, remove
 
-            @event[int]
-            def on_input():
+            @event[[]]
+            def closed():
                 def add(self, value):
-                    self.__events.add_handler("input", value)
+                    self.__events.add_handler("closed", value)
                 def remove(self, value):
-                    self.__events.remove_handler("input", value)
+                    self.__events.remove_handler("closed", value)
                 return add, remove
 
             def __init__(self) -> None:
@@ -95,80 +97,79 @@ def events(cls: _T | None = None, /, *, prefix: str = "", collection: str | None
 
     Args:
      - cls (type): A class with event annotations.
-     - prefix (str, optional): Only process annotations that start with the prefix. Defaults to "".
-     - collection (str | None, optional): Attribute name of an EventHandlerCollection or None. Defaults to None.
+     - collection (str?, optional): Attribute name of an EventHandlerCollection or None. Defaults to None.
 
     Returns:
-        (type): cls
+        (type): Returns the same class.
     """
 
     if cls is None:
-        if collection:  # treat "" as None as well
-            return lambda cls: _create_events(cls, prefix, collection)
-        return lambda cls: _create_init(cls, prefix)
+        return lambda cls: _events(cls, collection)
 
-    if collection:
-        return _create_events(cls, prefix, collection)
-    return _create_init(cls, prefix)
+    return _events(cls, collection)
 
 
-def _create_init(cls: _T, prefix: str, /) -> _T:
-    body_lines: list[str] = []
+def _events(cls: _T, collection: str | None, /) -> _T:
+    if not isinstance(cls, type):
+        raise TypeError("Argument 'cls' is not a class.")
 
-    for (name, T) in get_type_hints(cls).items():
-        if name.startswith(prefix):
-            if (get_origin(T) or T) is Event:
-                body_lines.append(f"self.{name} = Event()")
+    if collection is not None and collection.startswith("__") and not collection.endswith("__"):
+        collection = f"_{cls.__name__.lstrip('_')}{collection}"
 
-    if not body_lines:
-        return cls
+    fields: list[str] = [None]  # type: ignore
+    properties: list[str] = []
 
-    globals: dict[str, object] = {"Event": Event}
-    locals: dict[str, Callable[..., None]] = {}
+    for (attr, T) in get_type_hints(cls).items():
+        T = get_origin(T) or T
+        if T is Event:
+            fields.append(f"\n self.{attr} = Event()")
+        elif T is event:
+            properties.append(attr)
+        elif not collection and isinstance(T, type) and issubclass(T, EventHandlerCollection):
+            collection = attr
 
-    replace = "__init__" in vars(cls)
+    if len(fields) > 1:
+        _fields(cls, fields)
 
-    if replace:
-        globals["__init__"] = cls.__init__
-        body_lines.append("__init__(self, *args, **kwargs)")
-    else:
-        globals["__class__"] = cls
-        body_lines.insert(0, "super(__class__, self).__init__(*args, **kwargs)")
+    if properties:
+        _properties(cls, properties, collection)
 
-    body = "\n".join(f"\t{line}" for line in body_lines)
-    exec(f"def __init__(self, /, *args, **kwargs) -> None:\n{body}", globals, locals)
-    func = locals["__init__"]
-
-    if replace:
-        for attr in (
-            "__module__",
-            "__name__",
-            "__qualname__",
-            "__doc__",
-            "__annotations__",
-            "__dict__"
-        ):
-            try:
-                value = getattr(cls.__init__, attr)
-            except AttributeError:
-                pass
-            else:
-                setattr(func, attr, value)
-    else:
-        func.__module__ = cls.__module__
-        func.__name__ = "__init__"
-        func.__qualname__ = f"{cls.__qualname__}.__init__"
-
-    cls.__init__ = func
     return cls
 
 
-def _create_events(cls: _T, prefix: str, collection: str, /) -> _T:
-    # Assume collection is a valid identifier
-    if len(collection) > 2 and collection[:2] == "__" and collection[-2:] != "__":
-        collection = f"_{cls.__name__.lstrip('_')}{collection}"
+def _fields(cls: type, fields: list[str], /) -> None:
+    fields[0] = (
+        "def __init__(self, /, *args, **kwargs) -> None:"
+        "\n __orig_init__(self, *args, **kwargs)"
+    )
+    globals = {
+        "__builtins__": {},
+        "__orig_init__": cls.__init__,
+        "Event": Event,
+    }
+    locals = {}
+    exec("".join(fields), globals, locals)
 
-    ns = {}
+    f: Callable[..., None] = locals["__init__"]
+
+    if "__init__" in cls.__dict__:
+        update_wrapper(f, cls.__init__)
+    else:
+        f.__module__ = cls.__module__
+        f.__qualname__ = f"{cls.__qualname__}.__init__"
+
+    cls.__init__ = f
+
+
+def _properties(cls: type, properties: list[str], collection: str | None, /) -> None:
+    if not collection:
+        raise ValueError(
+            "Could not find an annotation of type "
+            f"'{EventHandlerCollection.__qualname__}' in class '{cls.__qualname__}'."
+        )
+
+    # Assume collection is a valid variable name
+    locals = {}
     exec(
         "def f(key, /):\n"
         " def add(self, value, /):\n"
@@ -177,39 +178,35 @@ def _create_events(cls: _T, prefix: str, collection: str, /) -> _T:
         " def remove(self, value, /):\n"
         f"  self.{collection}.remove_handler(key, value)\n"
 
-        " return (add, remove)\n",
-        ns
+        " return (add, remove)",
+        {"__builtins__": {}},
+        locals
     )
-    create_accessors: Callable[[str], accessors[...]] = ns["f"]
+    f: Callable[[str], accessors[...]] = locals["f"]
 
-    for (name, T) in get_type_hints(cls).items():
-        if name.startswith(prefix):
-            if (get_origin(T) or T) is event:
-                # Use the key if defined
-                key = getattr(cls, name, name.removeprefix(prefix))
-                setattr(cls, name, event(create_accessors(key)))
-    return cls
+    for name in properties:
+        setattr(cls, name, event(f(getattr(cls, name, name))))
 
 
-# TODO: Find a better name
+# TODO: better name
 def event_key(key: object, /) -> event[...]:
     """
-    Sets the key to use for event properties created with ``@events(collections=...)``.
+    Sets the key to use for event properties created with ``@events``.
 
-    Typically, empty objects are used as keys to avoid allocating strings.
+    Typically, empty objects are used as keys instead of allocating strings.
 
     Example::
 
-        @events(collection="__events")
+        @events(collection="_events")
         class EventKeyExample:
-            __event_changing: Final = object()
-            __event_changed: Final = object()
+            __event_added: Final = object()
+            __event_removed: Final = object()
 
-            changing: event[str] = event_key(__event_changing)
-            changed: event[str] = event_key(__event_changed)
+            added: event[str] = event_key(__event_added)
+            removed: event[str] = event_key(__event_removed)
 
             def __init__(self) -> None:
-                self.__events = EventHandlerList()
+                self._events = EventHandlerList()
 
     Args:
      - key (object): A key for the event handler collection to use.

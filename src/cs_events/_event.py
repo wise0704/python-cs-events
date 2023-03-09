@@ -65,51 +65,51 @@ class Event(Collection[EventHandler[P]]):
 
         self.__handlers = [*handlers]
 
-    def __iadd__(self, handler: EventHandler[P], /) -> Self:
+    def __iadd__(self, value: EventHandler[P], /) -> Self:
         """
         Subscribes the handler to this event.
 
         Args:
-         - handler ((**P) -> void): An event handler.
+         - value ((**P) -> void): An event handler.
 
         Returns:
             (Self): This event.
         """
 
-        self.__handlers.append(handler)
+        self.__handlers.append(value)
         return self
 
-    def __isub__(self, handler: EventHandler[P], /) -> Self:
+    def __isub__(self, value: EventHandler[P], /) -> Self:
         """
         Unsubscribes the handler from this event.
 
         If the handler has been added multiple times, removes only the last occurrence.
 
         Args:
-         - handler ((**P) -> void): An event handler
+         - value ((**P) -> void): An event handler
 
         Returns:
             (Self): This event
         """
 
         for i in reversed(range(len(self.__handlers))):
-            if self.__handlers[i] is handler:
+            if self.__handlers[i] is value:
                 del self.__handlers[i]
                 break
         return self
 
-    def __contains__(self, handler: object, /) -> bool:
+    def __contains__(self, obj: object, /) -> bool:
         """
         Returns whether the handler has been subscribed to this event.
 
         Args:
-         - handler (object): An event handler.
+         - obj (object): An event handler.
 
         Returns:
-            (bool): True if handler is subscribed, False otherwise.
+            (bool): ``True`` if handler is subscribed, ``False`` otherwise.
         """
 
-        return self.__handlers.__contains__(handler)
+        return self.__handlers.__contains__(obj)
 
     def __iter__(self) -> Iterator[EventHandler[P]]:
         """
@@ -155,8 +155,8 @@ class event(Generic[P]):
         obj.event += handler
         obj.event -= handler
 
-    will invoke the respective `add` and `remove` accessors with the arguments
-    `(obj, handler)`.
+    will invoke the respective ``add`` and ``remove`` accessors with the arguments
+    ``(obj, handler)``.
 
     An event property is not bound to an instance object, thus it must be accessed as
     an attribute of an object in order for the accessors to be invoked.
@@ -165,8 +165,8 @@ class event(Generic[P]):
         e = obj.event
         e += handler  # no effect on obj.event
 
-    has no effect on `obj.event` and will not call the `add` accessor,
-    since the argument `self` cannot be supplied.
+    has no effect on ``obj.event`` and will not call the ``add`` accessor,
+    since the argument ``self`` is not supplied.
 
     Unlike event fields, an event property cannot be invoked directly.
     Use the underlying event that the accessors point to instead.
@@ -200,6 +200,9 @@ class event(Generic[P]):
                 def remove(self: Self, value):
                     ...
                 return add, remove
+
+    Type Args:
+     - **P (ParamSpec): Event data parameter specification.
     """
 
     __slots__ = ("__add", "__remove")
