@@ -25,7 +25,7 @@
         src="https://img.shields.io/github/issues/wise0704/python-cs-events?logo=github" /></a>
     <a href="https://github.com/wise0704/python-cs-events/pulls">
         <img alt="pull requests"
-        src="https://img.shields.io/github/issues-pr-closed/wise0704/python-cs-events?logo=github" /></a>
+        src="https://img.shields.io/github/issues-pr/wise0704/python-cs-events?logo=github" /></a>
 </p>
 
 C# provides a very simple syntax using the [observer pattern](https://en.wikipedia.org/wiki/Observer_pattern) for its event handling system.
@@ -59,7 +59,7 @@ changed -= changed_handler
 An event can be raised by simply invoking it with the arguments:
 
 ```python
-changed("key", obj)
+changed("state", obj)
 ```
 
 Since `Event` acts just like a delegate from C#, it is not required to be bound to a class or an instance object.
@@ -119,7 +119,7 @@ class EventPropertyExample:
             ...
         def remove(self: Self, value: EventHandler[str, object]) -> None:
             ...
-        return add, remove
+        return (add, remove)
 ```
 
 Furthermore, the `EventHandlerCollection` interface is provided to support the functionalities of `System.ComponentModel.EventHandlerList` class from C#, along with the two implementations `EventHandlerList` and `EventHandlerDict` using a linked list and a dictionary respectively. The behaviour of `EventHandlerList` is exactly the same as of its counterpart from C#.
@@ -136,15 +136,15 @@ class EventPropertyExample:
             self.__events.add_handler(self.__event_changed, value)
         def remove(self: Self, value: EventHandler[str, object]) -> None:
             self.__events.remove_handler(self.__event_changed, value)
-        return add, remove
+        return (add, remove)
     
     def __init__(self) -> None:
         self.__events = EventHandlerList()
     
     def perform_change(self, key: str, value: object) -> None:
-        e = self.__events[self.__event_changed]
-        if e is not None:
-            e(key, value)
+        handler = self.__events[self.__event_changed]
+        if handler:
+            handler(key, value)
 ```
 
 The class decorator `@events` also provides a shortcut for event properties.
@@ -153,7 +153,7 @@ The above code can be shortened to:
 ```python
 @events(collection="__events")
 class EventPropertyExample:
-    changed: event[object, str]
+    changed: event[str, object]
 
     def __init__(self) -> None:
         self.__events = EventHandlerList()
