@@ -177,29 +177,29 @@ class event(Generic[P]):
             # Infer event type from the accessor parameter type
             @event
             def item_added():
-                def add(self: Self, value: EventHandler[int, object]):
+                def add(self: Self, value: EventHandler[int, object]) -> None:
                     ...
-                def remove(self: Self, value: EventHandler[int, object]):
+                def remove(self: Self, value: EventHandler[int, object]) -> None:
                     ...
-                return add, remove
+                return (add, remove)
 
             # Infer event type from the accessors type
             @event
             def item_removed() -> accessors[int, object]:
-                def add(self: Self, value):
+                def add(self: Self, value) -> None:
                     ...
-                def remove(self: Self, value):
+                def remove(self: Self, value) -> None:
                     ...
-                return add, remove
+                return (add, remove)
 
             # Explicit event type
             @event[int, object]
             def item_changed():
-                def add(self: Self, value):
+                def add(self: Self, value) -> None:
                     ...
-                def remove(self: Self, value):
+                def remove(self: Self, value) -> None:
                     ...
-                return add, remove
+                return (add, remove)
 
     Type Args:
      - **P (ParamSpec): Event data parameter specification.

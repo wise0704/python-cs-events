@@ -188,7 +188,6 @@ def _properties(cls: type, properties: list[str], collection: str | None, /) -> 
         setattr(cls, name, event(f(getattr(cls, name, name))))
 
 
-# TODO: better name
 def event_key(key: object, /) -> event[...]:
     """
     Sets the key to use for event properties created with ``@events``.
