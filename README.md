@@ -134,8 +134,10 @@ class EventPropertyExample:
     def changed():  # -> accessors[str, object] is inferred
         def add(self: Self, value: EventHandler[str, object]) -> None:
             self.__events.add_handler(self.__event_changed, value)
+
         def remove(self: Self, value: EventHandler[str, object]) -> None:
             self.__events.remove_handler(self.__event_changed, value)
+
         return (add, remove)
     
     def __init__(self) -> None:
