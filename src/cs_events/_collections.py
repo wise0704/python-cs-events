@@ -17,6 +17,8 @@ class EventHandlerCollection(Protocol):
     Provides a collection of event handler delegates.
     """
 
+    __slots__ = ()
+
     def __getitem__(self, key: object, /) -> Event[...] | None:
         """
         Gets the event for the specified key.
@@ -97,16 +99,16 @@ class EventHandlerList(EventHandlerCollection):
     def __getitem__(self, key: object, /) -> Event[...] | None:
         next = self.__head
         while next is not None:
-            _key, handler, next = next
-            if _key == key:  # use __eq__ instead of "is"
+            (k, handler, next) = next
+            if k == key:  # use __eq__ instead of "is"
                 return handler
         return None
 
     def add_handler(self, key: object, value: Callable[..., Any], /) -> None:
-        if (e := self[key]) is not None:
-            e += value
-        else:
+        if (e := self[key]) is None:
             self.__head = (key, Event(value), self.__head)
+        else:
+            e += value
 
 
 class EventHandlerDict(EventHandlerCollection):
@@ -127,7 +129,7 @@ class EventHandlerDict(EventHandlerCollection):
         return self.__dict.get(key)
 
     def add_handler(self, key: object, value: Callable[..., Any], /) -> None:
-        if (e := self[key]) is not None:
-            e += value
-        else:
+        if (e := self[key]) is None:
             self.__dict[key] = Event(value)
+        else:
+            e += value
