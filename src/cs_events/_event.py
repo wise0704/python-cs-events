@@ -16,6 +16,7 @@ __all__ = [
     "EventHandler",
 ]
 
+
 # Python does not provide a void type, which is a useful feature in callbacks,
 # and is clearly different from None.
 # Comparison with TS:
@@ -92,7 +93,7 @@ class Event(Collection[EventHandler[P]]):
             (Self): This event
         """
 
-        for i in reversed(range(len(self.__handlers))):
+        for i in range(len(self.__handlers) - 1, -1, -1):
             if self.__handlers[i] is value:
                 del self.__handlers[i]
                 break
@@ -109,7 +110,7 @@ class Event(Collection[EventHandler[P]]):
             (bool): ``True`` if handler is subscribed, ``False`` otherwise.
         """
 
-        return self.__handlers.__contains__(obj)
+        return obj in self.__handlers
 
     def __iter__(self) -> Iterator[EventHandler[P]]:
         """
@@ -119,7 +120,7 @@ class Event(Collection[EventHandler[P]]):
             ((**P) -> void): A subscribed event handler.
         """
 
-        return self.__handlers.__iter__()
+        return iter(self.__handlers)
 
     def __len__(self) -> int:
         """
@@ -129,7 +130,7 @@ class Event(Collection[EventHandler[P]]):
             (int): The number of subscribed event handlers.
         """
 
-        return self.__handlers.__len__()
+        return len(self.__handlers)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
         """
@@ -138,7 +139,7 @@ class Event(Collection[EventHandler[P]]):
         Handlers will be invoked in the order they subscribed.
         """
 
-        for handler in [*self.__handlers]:  # apparently faster than list.copy(), list[:] or even (*list, )
+        for handler in [*self.__handlers]:  # apparently faster than list.copy(), list[:] or (*list, )
             handler(*args, **kwargs)
 
 
@@ -233,8 +234,8 @@ class event(Generic[P]):
         else:
             self.__remove(instance, handler)
 
-    def __iadd__(self, handler: EventHandler[P], /) -> tuple[EventHandler[P], bool]:
-        return (handler, True)
+    def __iadd__(self, value: EventHandler[P], /) -> tuple[EventHandler[P], bool]:
+        return (value, True)
 
-    def __isub__(self, handler: EventHandler[P], /) -> tuple[EventHandler[P], bool]:
-        return (handler, False)
+    def __isub__(self, value: EventHandler[P], /) -> tuple[EventHandler[P], bool]:
+        return (value, False)

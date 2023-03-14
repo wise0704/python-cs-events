@@ -7,23 +7,23 @@ from ._event import Event, accessors, event
 
 
 __all__ = [
-    "events",
     "event_key",
+    "events",
 ]
 
 
-_T = TypeVar("_T", bound=type)
+T = TypeVar("T", bound=type)
 
 
 @overload
-def events(cls: _T, /) -> _T: ...
+def events(cls: T, /) -> T: ...
 
 
 @overload
-def events(*, collection: str | None = ...) -> Callable[[_T], _T]: ...
+def events(*, collection: str | None = ...) -> Callable[[T], T]: ...
 
 
-def events(cls: _T | None = None, /, *, collection: str | None = None) -> _T | Callable[[_T], _T]:
+def events(cls: T | None = None, /, *, collection: str | None = None) -> T | Callable[[T], T]:
     """
     Adds event fields and/or properties based on the annotations defined in the class.
 
@@ -109,9 +109,9 @@ def events(cls: _T | None = None, /, *, collection: str | None = None) -> _T | C
     return _events(cls, collection)
 
 
-def _events(cls: _T, collection: str | None, /) -> _T:
+def _events(cls: T, collection: str | None, /) -> T:
     if not isinstance(cls, type):
-        raise TypeError("Argument 'cls' is not a class.")
+        raise TypeError("Argument 'cls' must be a class.")
 
     if collection is not None and collection.startswith("__") and not collection.endswith("__"):
         collection = f"_{cls.__name__.lstrip('_')}{collection}"

@@ -4,7 +4,7 @@ Provides C#-style event handling mechanism.
 
 from ._collections import EventHandlerCollection, EventHandlerDict, EventHandlerList
 from ._event import Event, EventHandler, accessors, event
-from ._events import events, event_key
+from ._events import event_key, events
 
 
 __all__ = [
