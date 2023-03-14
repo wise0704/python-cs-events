@@ -176,29 +176,26 @@ def test_events_properties_private() -> None:
 
 
 def test_events_properties_key() -> None:
-    @events(collection="events")
+    @events
     class Test:
         test1: event[[]] = event_key(_event_test1 := object())
         test2: event[str] = event_key(_event_test2 := object())
-
-        def __init__(self) -> None:
-            self.events = EventHandlerList()
+        events: EventHandlerCollection
 
     t = Test()
-    t.events.add_handler = Mock()
-    t.events.remove_handler = Mock()
+    t.events = Mock()
 
     def handler1() -> None: ...
     def handler2(_: str) -> None: ...
 
     t.test1 += handler1
-    t.events.add_handler.assert_called_once_with(Test._event_test1, handler1)
+    cast(Mock, t.events.add_handler).assert_called_once_with(Test._event_test1, handler1)
 
     t.test1 -= handler1
-    t.events.remove_handler.assert_called_once_with(Test._event_test1, handler1)
+    cast(Mock, t.events.remove_handler).assert_called_once_with(Test._event_test1, handler1)
 
     t.test2 -= handler2
-    t.events.remove_handler.assert_called_with(Test._event_test2, handler2)
+    cast(Mock, t.events.remove_handler).assert_called_with(Test._event_test2, handler2)
 
     t.test2 += handler2
-    t.events.add_handler.assert_called_with(Test._event_test2, handler2)
+    cast(Mock, t.events.add_handler).assert_called_with(Test._event_test2, handler2)
