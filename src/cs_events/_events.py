@@ -1,5 +1,5 @@
+import functools
 from collections.abc import Callable
-from functools import update_wrapper
 from typing import TypeVar, get_origin, get_type_hints, overload
 
 from ._collections import EventHandlerCollection
@@ -122,10 +122,10 @@ def _events(cls: T, collection: str | None, /) -> T:
     for (attr, T) in get_type_hints(cls).items():
         T = get_origin(T) or T
         if T is Event:
-            fields.append(f"\n self.{attr} = Event()")
+            fields.append(f"self.{attr} = Event()")
         elif T is event:
             properties.append(attr)
-        elif not collection and isinstance(T, type) and issubclass(T, EventHandlerCollection):
+        elif collection is None and isinstance(T, type) and issubclass(T, EventHandlerCollection):
             collection = attr
 
     if len(fields) > 1:
@@ -148,12 +148,12 @@ def _fields(cls: type, fields: list[str], /) -> None:
         "Event": Event,
     }
     locals = {}
-    exec("".join(fields), globals, locals)
+    exec("\n ".join(fields), globals, locals)
 
     f: Callable[..., None] = locals["__init__"]
 
     if "__init__" in cls.__dict__:
-        update_wrapper(f, cls.__init__)
+        functools.update_wrapper(f, cls.__init__)
     else:
         f.__module__ = cls.__module__
         f.__qualname__ = f"{cls.__qualname__}.__init__"
@@ -182,7 +182,7 @@ def _properties(cls: type, properties: list[str], collection: str | None, /) -> 
         {"__builtins__": {}},
         locals
     )
-    f: Callable[[str], accessors[...]] = locals["f"]
+    f: Callable[[object], accessors[...]] = locals["f"]
 
     for name in properties:
         setattr(cls, name, event(f(getattr(cls, name, name))))

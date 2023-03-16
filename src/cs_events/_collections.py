@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Protocol, Union, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, Union, runtime_checkable
 
 from ._event import Event
 
@@ -9,6 +9,9 @@ __all__ = [
     "EventHandlerList",
     "EventHandlerDict",
 ]
+
+
+void = None | Any
 
 
 @runtime_checkable
@@ -32,24 +35,24 @@ class EventHandlerCollection(Protocol):
 
         ...
 
-    def add_handler(self, key: object, value: Callable[..., Any], /) -> None:
+    def add_handler(self, key: object, value: Callable[..., void], /) -> None:
         """
         Adds the delegate to the list.
 
         Args:
          - key (object): A key that owns the event.
-         - value ((...) -> Any): A delegate to add to the list.
+         - value ((...) -> void): A delegate to add to the list.
         """
 
         ...
 
-    def remove_handler(self, key: object, value: Callable[..., Any], /) -> None:
+    def remove_handler(self, key: object, value: Callable[..., void], /) -> None:
         """
         Removes the delegate from the list.
 
         Args:
          - key (object): A key that owns the event.
-         - value ((...) -> Any): A delegate to remove from the list.
+         - value ((...) -> void): A delegate to remove from the list.
         """
 
         if (e := self[key]) is not None:
@@ -79,7 +82,8 @@ class EventHandlerCollection(Protocol):
             e(*args, **kwargs)
 
 
-_ListEntry = tuple[object, Event[...], Union["_ListEntry", None]]
+if TYPE_CHECKING:
+    ListEntry = tuple[object, Event[...], Union["ListEntry", None]]
 
 
 class EventHandlerList(EventHandlerCollection):
@@ -94,17 +98,17 @@ class EventHandlerList(EventHandlerCollection):
         Initializes a new instance of the ``EventHandlerList`` class.
         """
 
-        self.__head: _ListEntry | None = None
+        self.__head: ListEntry | None = None
 
     def __getitem__(self, key: object, /) -> Event[...] | None:
         next = self.__head
         while next is not None:
-            (k, handler, next) = next
+            (k, e, next) = next
             if k == key:  # use __eq__ instead of "is"
-                return handler
+                return e
         return None
 
-    def add_handler(self, key: object, value: Callable[..., Any], /) -> None:
+    def add_handler(self, key: object, value: Callable[..., void], /) -> None:
         if (e := self[key]) is None:
             self.__head = (key, Event(value), self.__head)
         else:
@@ -128,7 +132,7 @@ class EventHandlerDict(EventHandlerCollection):
     def __getitem__(self, key: object, /) -> Event[...] | None:
         return self.__dict.get(key)
 
-    def add_handler(self, key: object, value: Callable[..., Any], /) -> None:
+    def add_handler(self, key: object, value: Callable[..., void], /) -> None:
         if (e := self[key]) is None:
             self.__dict[key] = Event(value)
         else:
