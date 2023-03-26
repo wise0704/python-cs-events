@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from cs_events import Event, event
+from events import Event, event
 
 
 def test_Event() -> None:

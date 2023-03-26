@@ -1,7 +1,7 @@
 from typing import cast
 from unittest.mock import Mock
 
-from cs_events import Event, EventHandlerCollection, EventHandlerList, event, event_key, events
+from events import Event, EventHandlerCollection, EventHandlerList, event, event_key, events
 
 
 def test_events_field() -> None:

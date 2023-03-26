@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 import pytest
 
-from cs_events import Event, EventHandlerCollection, EventHandlerDict, EventHandlerList
+from events import Event, EventHandlerCollection, EventHandlerDict, EventHandlerList
 
 
 @pytest.mark.parametrize("collection", [EventHandlerList(), EventHandlerDict()])

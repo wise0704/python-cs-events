@@ -39,7 +39,7 @@ Python does not support an addition of two `Callable` types.
 So the `Event[**TArgs]` class is provided to mimic delegates:
 
 ```python
-from cs_events import Event
+from events import Event
 
 changed = Event[str, object]()
 ```
@@ -86,7 +86,7 @@ obj.update("new value")
 A class decorator `@events` is provided as a shortcut for event fields:
 
 ```python
-from cs_events import Event, events
+from events import Event, events
 
 @events
 class EventFieldsExample:
@@ -110,7 +110,7 @@ This feature is useful for classes that do not actually own the events, but need
 The `@event[**TArgs]` decorator and the `accessors[**TArgs]` type are provided to support this feature:
 
 ```python
-from cs_events import accessors, event, EventHandler
+from events import accessors, event, EventHandler
 
 class EventPropertyExample:
     @event[str, object]
