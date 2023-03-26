@@ -29,7 +29,6 @@ EventHandler = Callable[P, void]
 accessors = tuple[Callable[[Any, EventHandler[P]], void], Callable[[Any, EventHandler[P]], void]]
 
 
-@final
 class Event(Collection[EventHandler[P]]):
     """
     Represents an event delegate that handlers can subscribe to.
