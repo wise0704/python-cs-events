@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Protocol, Union, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, Union, runtime_checkable
 
 from ._event import Event
 
@@ -11,7 +11,7 @@ __all__ = [
 ]
 
 
-void = None | Any
+void = object
 
 
 @runtime_checkable

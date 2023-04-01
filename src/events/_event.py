@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Callable, Collection, Iterator
-from typing import Any, Generic, ParamSpec, final, overload
+from typing import Generic, ParamSpec, final, overload
 
 
 if sys.version_info >= (3, 11):
@@ -22,11 +22,11 @@ __all__ = [
 # Comparison with TS:
 #     function foo(): void {} <==> def foo() -> None: pass
 #     let bar: () => void;    <==> bar: Callable[[], Any]
-void = None | Any
+void = object
 P = ParamSpec("P")
 
 EventHandler = Callable[P, void]
-accessors = tuple[Callable[[Any, EventHandler[P]], void], Callable[[Any, EventHandler[P]], void]]
+accessors = tuple[Callable[[object, EventHandler[P]], void], Callable[[object, EventHandler[P]], void]]
 
 
 class Event(Collection[EventHandler[P]]):
