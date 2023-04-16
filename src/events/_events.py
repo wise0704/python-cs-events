@@ -113,7 +113,7 @@ def _events(cls: T, collection: str | None, /) -> T:
     if not isinstance(cls, type):
         raise TypeError("Argument 'cls' must be a class.")
 
-    if collection is not None and collection.startswith("__") and not collection.endswith("__"):
+    if collection and collection.startswith("__") and not collection.endswith("__"):
         collection = f"_{cls.__name__.lstrip('_')}{collection}"
 
     fields: list[str] = [None]  # type: ignore
@@ -125,7 +125,7 @@ def _events(cls: T, collection: str | None, /) -> T:
             fields.append(f"self.{attr} = Event()")
         elif T is event:
             properties.append(attr)
-        elif collection is None and isinstance(T, type) and issubclass(T, EventHandlerCollection):
+        elif not collection and isinstance(T, type) and issubclass(T, EventHandlerCollection):
             collection = attr
 
     if len(fields) > 1:
@@ -213,4 +213,5 @@ def event_key(key: object, /) -> event[...]:
     Returns:
         (event[...]): A hint for the ``@events`` decorator to use the specified key instead.
     """
+
     return key  # type: ignore
