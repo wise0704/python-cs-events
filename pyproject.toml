@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "cs-events"
-version = "0.4.0"
+version = "0.4.1"
 description = "C#-style event handling mechanism for Python"
 authors = ["Daniel Jeong <wise0704@outlook.com>"]
 keywords = ["python", "event", "c#"]
