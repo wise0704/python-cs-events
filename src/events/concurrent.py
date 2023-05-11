@@ -17,7 +17,9 @@ else:
 
 
 __all__ = [
+    "VolatileEvent",
     "ConcurrentEventHandlerList",
+    "ConcurrentEventHandlerDict",
 ]
 
 
@@ -25,40 +27,58 @@ P = ParamSpec("P")
 
 
 class VolatileEvent(Event[P]):
-    __slots__ = ("__lock")
+    """
+    A thread-safe event delegate.
+
+    The following methods are thread-safe::
+
+        event += handler  # __iadd__()
+        event -= handler  # __isub__()
+        event(...)  # __call__()
+
+    Other methods, specifically::
+
+        x in event  # __contains__()
+        *event  # __iter__()
+        len(event)  # __len__()
+
+    are not thread-safe.
+    Manual usage of the ``_lock`` property is required in appropriate places
+    where those methods are used.
+
+    Type Args:
+     - **P (ParamSpec): Event data parameter specification.
+    """
+
+    __slots__ = ("_lock")
 
     def __init__(self, *handlers: EventHandler[P]) -> None:
+        """
+        Initializes a new instance of the ``VolatileEvent`` class.
+
+        Args:
+         - *handlers ((**P) -> void): List of handlers to subscribe to the event.
+        """
+
         super().__init__(*handlers)
-        self.__lock = Lock()
+        self._lock = Lock()
 
     def __iadd__(self, value: EventHandler[P], /) -> Self:
-        self.__lock.acquire()
+        self._lock.acquire()
         super().__iadd__(value)
-        self.__lock.release()
+        self._lock.release()
         return self
 
     def __isub__(self, value: EventHandler[P], /) -> Self:
-        self.__lock.acquire()
+        self._lock.acquire()
         super().__isub__(value)
-        self.__lock.release()
+        self._lock.release()
         return self
 
-    def __contains__(self, obj: object, /) -> bool:
-        self.__lock.acquire()
-        x = super().__contains__(obj)
-        self.__lock.release()
-        return x
-
-    def __len__(self) -> int:
-        self.__lock.acquire()
-        x = super().__len__()
-        self.__lock.release()
-        return x
-
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
-        self.__lock.acquire()
+        self._lock.acquire()
         handlers = [*self]
-        self.__lock.release()
+        self._lock.release()
         for handler in handlers:
             handler(*args, **kwargs)
 
