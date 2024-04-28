@@ -197,6 +197,12 @@ class async_event(event[P]):
     def __init__(self, x, /) -> None:
         super().__init__(x)
 
+    # __get__ definition is required for async_event to be recognized as a property
+    # although the base class already has both __get__ and __set__ definitions
+    @override
+    def __get__(self, instance: object, cls: type, /) -> Self:
+        return self
+
     @override
     def __iadd__(self, handler: AsyncEventHandler[P]) -> add[P]:
         """
