@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Union
 
 from ._common import Delegate
-from ._event import Event
+from ._field import Event
 
 
 if sys.version_info >= (3, 12):

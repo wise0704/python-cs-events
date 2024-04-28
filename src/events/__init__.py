@@ -4,9 +4,9 @@ Provides C#-style event handling mechanism.
 
 from ._collections import EventHandlerCollection, EventHandlerDict, EventHandlerList
 from ._common import Delegate, void
-from ._decorator import async_event, event
-from ._event import AsyncEvent, AsyncEventHandler, Event, EventHandler
-from ._events import event_key, events
+from ._field import AsyncEvent, AsyncEventHandler, Event, EventHandler
+from ._property import async_event, event
+from ._utils import event_key, events
 
 
 __all__ = [

@@ -3,8 +3,8 @@ from collections.abc import Callable
 from typing import Any, TypeVar, get_origin, get_type_hints, overload
 
 from ._collections import EventHandlerCollection
-from ._decorator import async_event, event
-from ._event import AsyncEvent, Event
+from ._field import AsyncEvent, Event
+from ._property import async_event, event
 
 
 __all__ = [

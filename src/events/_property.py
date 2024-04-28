@@ -3,7 +3,7 @@ from collections.abc import Callable
 from typing import Any, Generic, Literal, ParamSpec, TypeAlias, overload
 
 from ._common import void
-from ._event import AsyncEventHandler, EventHandler
+from ._field import AsyncEventHandler, EventHandler
 
 
 if sys.version_info >= (3, 12):
