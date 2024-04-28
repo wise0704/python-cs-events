@@ -1,6 +1,7 @@
 import sys
+from abc import ABC, abstractmethod
 from collections.abc import Callable, Collection
-from typing import Iterator, ParamSpec, Protocol, TypeAlias, TypeVar
+from typing import Iterator, ParamSpec, TypeAlias, TypeVar
 
 
 if sys.version_info >= (3, 11):
@@ -39,17 +40,17 @@ let bar: () => void;
 """
 
 
-T = TypeVar("T")
 P = ParamSpec("P")
+T = TypeVar("T")
 
 
-class Delegate(Collection[Callable[P, T]], Protocol):
+class Delegate(Collection[Callable[P, T]], ABC):
     """
     Represents a multicast delegate that can have more than one element in its invocation list.
 
     Type Args:
         **P: Parameter specification.
-        covariant T: Return type.
+        T: Return type.
     """
 
     __slots__ = ["__invocation_list"]
@@ -105,6 +106,7 @@ class Delegate(Collection[Callable[P, T]], Protocol):
                 break
         return self
 
+    @abstractmethod
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> T:
         """
         Invokes the callable objects in the invocation list in the order.

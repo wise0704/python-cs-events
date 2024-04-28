@@ -1,6 +1,7 @@
 import sys
+from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Protocol, Union, runtime_checkable
+from typing import TYPE_CHECKING, Union
 
 from ._common import Delegate
 from ._event import Event
@@ -19,14 +20,14 @@ __all__ = [
 ]
 
 
-@runtime_checkable
-class EventHandlerCollection(Protocol):
+class EventHandlerCollection(ABC):
     """
     Provides a collection of event handler delegates.
     """
 
     __slots__ = []
 
+    @abstractmethod
     def __getitem__(self, key: object, /) -> Delegate | None:
         """
         Gets the event for the specified key.
@@ -40,6 +41,7 @@ class EventHandlerCollection(Protocol):
 
         raise NotImplementedError
 
+    @abstractmethod
     def add_handler(self, key: object, value: Callable, event_type: type[Delegate] = Event, /) -> None:
         """
         Adds the delegate to the collection.
@@ -145,7 +147,7 @@ class EventHandlerDict(EventHandlerCollection):
     Provides a simple dictionary of event handler delegates.
     """
 
-    __slots__ = ("__dict")
+    __slots__ = ["__dict"]
 
     def __init__(self) -> None:
         """

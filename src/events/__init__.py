@@ -4,21 +4,24 @@ Provides C#-style event handling mechanism.
 
 from ._collections import EventHandlerCollection, EventHandlerDict, EventHandlerList
 from ._common import Delegate, void
-from ._decorator import accessors, event
+from ._decorator import async_event, event
 from ._event import AsyncEvent, AsyncEventHandler, Event, EventHandler
+from ._events import event_key, events
 
 
 __all__ = [
-    "accessors",
+    "async_event",
     "AsyncEvent",
     "AsyncEventHandler",
     "Delegate",
+    "event_key",
     "event",
     "Event",
     "EventHandler",
     "EventHandlerCollection",
     "EventHandlerDict",
     "EventHandlerList",
+    "events",
     "void",
 ]
 __author__ = "Daniel Jeong"

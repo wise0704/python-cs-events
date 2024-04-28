@@ -1,15 +1,15 @@
 import sys
 from collections.abc import Callable
-from typing import Any, Generic, Literal, ParamSpec, TypeAlias, TypeVar, overload, override
+from typing import Any, Generic, Literal, ParamSpec, TypeAlias, overload
 
-from ._common import void, Delegate
-from ._event import EventHandler, AsyncEventHandler
+from ._common import void
+from ._event import AsyncEventHandler, EventHandler
 
 
-if sys.version_info >= (3, 11):
-    from typing import Self
+if sys.version_info >= (3, 12):
+    from typing import Self, override
 else:
-    from typing_extensions import Self
+    from typing_extensions import Self, override
 
 
 __all__ = [

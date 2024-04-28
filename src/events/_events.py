@@ -139,7 +139,7 @@ def _events(cls: T, collection: str | None, /) -> T:
             properties.append((attr, event))
         elif T is async_event:
             properties.append((attr, async_event))
-        elif not collection and isinstance(T, type) and issubclass(T, EventHandlerCollection):  # type: ignore
+        elif not collection and isinstance(T, type) and issubclass(T, EventHandlerCollection):
             collection = attr
 
     if fields:

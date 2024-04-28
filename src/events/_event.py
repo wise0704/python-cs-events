@@ -58,6 +58,16 @@ class Event(Delegate[P, void]):
 
     __slots__ = []
 
+    def __init__(self, *values: EventHandler[P]) -> None:
+        """
+        Initializes a new instance of the `Event` class.
+
+        Args:
+            *values ((**P) -> void): Event handlers.
+        """
+
+        super().__init__(*values)
+
     @override
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
         """
@@ -94,6 +104,16 @@ class AsyncEvent(Delegate[P, Coroutine[Any, Any, void]]):
     """
 
     __slots__ = []
+
+    def __init__(self, *values: AsyncEventHandler[P]) -> None:
+        """
+        Initializes a new instance of the `AsyncEvent` class.
+
+        Args:
+            *values (async (**P) -> void): Asynchronous event handlers.
+        """
+
+        super().__init__(*values)
 
     if sys.version_info >= (3, 11):
         @override

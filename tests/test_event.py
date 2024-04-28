@@ -6,61 +6,61 @@ from events import Event, event
 def test_Event() -> None:
     def event_handler() -> None: ...
 
-    event = Event()
-    assert len(event) == 0
+    e = Event()
+    assert len(e) == 0
 
-    event = Event(event_handler)
-    assert len(event) == 1
+    e = Event(event_handler)
+    assert len(e) == 1
 
 
 def test_Event_impl_Collection() -> None:
     def event_handler1() -> None: ...
     def event_handler2() -> None: ...
 
-    event = Event(
+    e = Event(
         event_handler1,
         event_handler2,
     )
 
-    assert event_handler1 in event
-    assert event_handler2 in event
+    assert event_handler1 in e
+    assert event_handler2 in e
 
-    assert list(event) == [event_handler1, event_handler2]
+    assert list(e) == [event_handler1, event_handler2]
 
-    assert len(event) == 2
+    assert len(e) == 2
 
 
 def test_Event_add_remove() -> None:
     def handler1() -> None: ...
     def handler2() -> None: ...
 
-    event = Event(handler1)
-    assert list(event) == [handler1]
+    e = Event(handler1)
+    assert list(e) == [handler1]
 
-    event += handler2
-    assert list(event) == [handler1, handler2]
+    e += handler2
+    assert list(e) == [handler1, handler2]
 
-    event -= handler2
-    assert list(event) == [handler1]
+    e -= handler2
+    assert list(e) == [handler1]
 
-    event -= handler2
-    assert list(event) == [handler1]
+    e -= handler2
+    assert list(e) == [handler1]
 
-    event += handler2
-    event += handler1
-    event += handler2
-    assert list(event) == [handler1, handler2, handler1, handler2]
+    e += handler2
+    e += handler1
+    e += handler2
+    assert list(e) == [handler1, handler2, handler1, handler2]
 
-    event -= handler1
-    assert list(event) == [handler1, handler2, handler2]
+    e -= handler1
+    assert list(e) == [handler1, handler2, handler2]
 
 
 def test_Event_invoke() -> None:
     handler1 = Mock()
     handler2 = Mock()
 
-    event = Event(handler1, handler2)
-    event(12345, "hello", [True, False], a=0, b=None)
+    e = Event(handler1, handler2)
+    e(12345, "hello", [True, False], a=0, b=None)
 
     args, kwargs = (12345, "hello", [True, False]), {"a": 0, "b": None}
     handler1.assert_called_once_with(*args, **kwargs)
