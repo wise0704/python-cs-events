@@ -211,7 +211,7 @@ def test_events_properties_key() -> None:
     def handler2(_: str) -> None: ...
 
     t.test1 += handler1
-    cast(Mock, t.events.add_handler).assert_called_once_with(Test._event_test1, handler1)
+    cast(Mock, t.events.add_handler).assert_called_once_with(Test._event_test1, handler1, Event)
 
     t.test1 -= handler1
     cast(Mock, t.events.remove_handler).assert_called_once_with(Test._event_test1, handler1)
@@ -220,4 +220,4 @@ def test_events_properties_key() -> None:
     cast(Mock, t.events.remove_handler).assert_called_with(Test._event_test2, handler2)
 
     t.test2 += handler2
-    cast(Mock, t.events.add_handler).assert_called_with(Test._event_test2, handler2)
+    cast(Mock, t.events.add_handler).assert_called_with(Test._event_test2, handler2, Event)
