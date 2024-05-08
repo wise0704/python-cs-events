@@ -124,6 +124,7 @@ def test_events_properties() -> None:
     assert obj.events["event3"] is None
     assert (e := obj.events["event4"]) is not None
     assert len(e) == 1
+    assert isinstance(e, AsyncEvent)
 
     event3_handler1 = Mock()
     event3_handler2 = Mock()

@@ -3,6 +3,7 @@ from collections.abc import Callable
 from typing import Any, TypeVar, get_origin, get_type_hints, overload
 
 from ._collections import EventHandlerCollection
+from ._common import Delegate
 from ._field import AsyncEvent, Event
 from ._property import async_event, event
 
@@ -127,7 +128,7 @@ def _events(cls: T, collection: str | None, /) -> T:
         collection = f"_{cls.__name__.lstrip('_')}{collection}"
 
     fields: list[tuple[str, str]] = []
-    properties: list[tuple[str, type[event | async_event]]] = []
+    properties: list[tuple[str, type[event], type[Delegate]]] = []
 
     for (attr, T) in get_type_hints(cls).items():
         T = get_origin(T) or T
@@ -136,9 +137,9 @@ def _events(cls: T, collection: str | None, /) -> T:
         elif T is AsyncEvent:
             fields.append((attr, "AsyncEvent"))
         elif T is event:
-            properties.append((attr, event))
+            properties.append((attr, event, Event))
         elif T is async_event:
-            properties.append((attr, async_event))
+            properties.append((attr, async_event, AsyncEvent))
         elif not collection and isinstance(T, type) and issubclass(T, EventHandlerCollection):
             collection = attr
 
@@ -180,7 +181,7 @@ def _fields(cls: type, fields: list[tuple[str, str]], /) -> None:
     cls.__init__ = __init__
 
 
-def _properties(cls: type, properties: list[tuple[str, type[event | async_event]]], collection: str | None, /) -> None:
+def _properties(cls: type, properties: list[tuple[str, type[event], type[Delegate]]], collection: str | None, /) -> None:
     if not collection:
         raise ValueError(
             "Could not find an annotation of type "
@@ -190,9 +191,9 @@ def _properties(cls: type, properties: list[tuple[str, type[event | async_event]
     # Assume collection is a valid variable name
     locals: dict[str, Callable] = {}
     exec(
-        f"def f(key, /):\n"
+        f"def f(key, event_type, /):\n"
         f" def add(self, value, /):\n"
-        f"  self.{collection}.add_handler(key, value)\n"
+        f"  self.{collection}.add_handler(key, value, event_type)\n"
         f" def remove(self, value, /):\n"
         f"  self.{collection}.remove_handler(key, value)\n"
         f" return (add, remove)",
@@ -201,8 +202,8 @@ def _properties(cls: type, properties: list[tuple[str, type[event | async_event]
     )
     f = locals["f"]
 
-    for (name, event_type) in properties:
-        setattr(cls, name, event_type(f(getattr(cls, name, name))))
+    for (name, property_type, event_type) in properties:
+        setattr(cls, name, property_type(f(getattr(cls, name, name), event_type)))
 
 
 def event_key(key: object, /) -> Any:
