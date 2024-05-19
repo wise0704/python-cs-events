@@ -25,4 +25,4 @@ __all__ = [
     "void",
 ]
 __author__ = "Daniel Jeong"
-__version__ = "0.4.1"
+__version__ = "0.5.0"
