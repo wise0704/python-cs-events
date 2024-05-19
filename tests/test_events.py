@@ -1,15 +1,18 @@
 from typing import cast
 from unittest.mock import Mock
 
-from events import Event, EventHandlerCollection, EventHandlerList, event, event_key, events
+from events import (AsyncEvent, Event, EventHandlerCollection, EventHandlerList, async_event, event,
+                    event_key, events,)
 
 
 def test_events_field() -> None:
     @events
     class TestClass:
         event1: Event[[]]
+        event2: AsyncEvent[[]]
 
     assert isinstance(TestClass().event1, Event)
+    assert isinstance(TestClass().event2, AsyncEvent)
 
 
 def test_events_field_init() -> None:
@@ -49,6 +52,7 @@ def test_events_properties() -> None:
         event1: event[int]
         event2: event[str, str]
         event3: event[...]
+        event4: async_event[bool]
 
         def __init__(self) -> None:
             self.__events = EventHandlerList()
@@ -60,19 +64,23 @@ def test_events_properties() -> None:
     assert isinstance(TestClass.event1, event)
     assert isinstance(TestClass.event2, event)
     assert isinstance(TestClass.event3, event)
+    assert isinstance(TestClass.event4, async_event)
 
     obj = TestClass()
 
     assert isinstance(obj.event1, event)
     assert isinstance(obj.event2, event)
     assert isinstance(obj.event3, event)
+    assert isinstance(obj.event4, async_event)
 
     assert obj.events["event1"] is None
     assert obj.events["event2"] is None
     assert obj.events["event3"] is None
+    assert obj.events["event4"] is None
 
     def event1_handler(_: int) -> None: ...
-    def event2_handler(_0: str, _1: str) -> None: ...
+    def event2_handler(_: str, __: str) -> None: ...
+    async def event4_handler(_: bool) -> None: ...
 
     obj.event1 += event1_handler
 
@@ -80,6 +88,7 @@ def test_events_properties() -> None:
     assert len(e) == 1
     assert obj.events["event2"] is None
     assert obj.events["event3"] is None
+    assert obj.events["event4"] is None
 
     obj.event1 -= event1_handler
 
@@ -87,6 +96,7 @@ def test_events_properties() -> None:
     assert len(e) == 0
     assert obj.events["event2"] is None
     assert obj.events["event3"] is None
+    assert obj.events["event4"] is None
 
     obj.event2 -= event2_handler
 
@@ -94,6 +104,7 @@ def test_events_properties() -> None:
     assert len(e) == 0
     assert obj.events["event2"] is None
     assert obj.events["event3"] is None
+    assert obj.events["event4"] is None
 
     obj.event2 += event2_handler
 
@@ -102,6 +113,18 @@ def test_events_properties() -> None:
     assert (e := obj.events["event2"]) is not None
     assert len(e) == 1
     assert obj.events["event3"] is None
+    assert obj.events["event4"] is None
+
+    obj.event4 += event4_handler
+
+    assert (e := obj.events["event1"]) is not None
+    assert len(e) == 0
+    assert (e := obj.events["event2"]) is not None
+    assert len(e) == 1
+    assert obj.events["event3"] is None
+    assert (e := obj.events["event4"]) is not None
+    assert len(e) == 1
+    assert isinstance(e, AsyncEvent)
 
     event3_handler1 = Mock()
     event3_handler2 = Mock()
@@ -113,9 +136,8 @@ def test_events_properties() -> None:
 
     obj.events.invoke("event3", 83261, "hi", [0, False], a=1, b=None)
 
-    args, kwargs = (83261, "hi", [0, False]), {"a": 1, "b": None}
-    event3_handler1.assert_called_once_with(*args, **kwargs)
-    event3_handler2.assert_called_once_with(*args, **kwargs)
+    event3_handler1.assert_called_once_with(83261, "hi", [0, False], a=1, b=None)
+    event3_handler2.assert_called_once_with(83261, "hi", [0, False], a=1, b=None)
 
 
 def test_events_properties_collection() -> None:
@@ -125,7 +147,7 @@ def test_events_properties_collection() -> None:
         events: EventHandlerList
 
     obj = Test()
-    obj.events = Mock()
+    obj.events = cast(EventHandlerList, Mock())
 
     obj.e += lambda: 0
     cast(Mock, obj.events.add_handler).assert_called_once()
@@ -137,8 +159,8 @@ def test_events_properties_collection() -> None:
         events2: object
 
     obj2 = Test2()
-    obj2.events = Mock()
-    obj2.events2 = Mock()
+    obj2.events = cast(EventHandlerList, Mock())
+    obj2.events2 = cast(EventHandlerList, Mock())
 
     obj2.e += lambda: 0
     cast(Mock, obj2.events.add_handler).assert_not_called()
@@ -183,13 +205,13 @@ def test_events_properties_key() -> None:
         events: EventHandlerCollection
 
     t = Test()
-    t.events = Mock()
+    t.events = cast(EventHandlerCollection, Mock())
 
     def handler1() -> None: ...
     def handler2(_: str) -> None: ...
 
     t.test1 += handler1
-    cast(Mock, t.events.add_handler).assert_called_once_with(Test._event_test1, handler1)
+    cast(Mock, t.events.add_handler).assert_called_once_with(Test._event_test1, handler1, Event)
 
     t.test1 -= handler1
     cast(Mock, t.events.remove_handler).assert_called_once_with(Test._event_test1, handler1)
@@ -198,4 +220,4 @@ def test_events_properties_key() -> None:
     cast(Mock, t.events.remove_handler).assert_called_with(Test._event_test2, handler2)
 
     t.test2 += handler2
-    cast(Mock, t.events.add_handler).assert_called_with(Test._event_test2, handler2)
+    cast(Mock, t.events.add_handler).assert_called_with(Test._event_test2, handler2, Event)
