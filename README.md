@@ -107,42 +107,42 @@ public event EventHandler<ItemChangedEventArgs> ItemChanged
 
 This feature is useful for classes that do not actually own the events, but need to forward the subscriptions to the underlying object that do own the events.
 
-The `@event[**TArgs]` decorator and the `accessors[**TArgs]` type are provided to support this feature:
+The `@event[**TArgs]` decorator is provided to support this feature:
 
 ```python
 from events import accessors, event, EventHandler
 
 class EventPropertyExample:
     @event[str, object]
-    def item_changed() -> accessors[str, object]:
+    def item_changed():
         def add(self: Self, value: EventHandler[str, object]) -> None: ...
         def remove(self: Self, value: EventHandler[str, object]) -> None: ...
         return (add, remove)
 ```
 
-Furthermore, the `EventHandlerCollection` interface is provided to support the functionalities of `System.ComponentModel.EventHandlerList` class from C#, along with the two implementations `EventHandlerList` and `EventHandlerDict` using a linked list and a dictionary respectively. The behaviour of `EventHandlerList` is exactly the same as of its counterpart from C#.
+> Note: This is an experimental syntax, and may change in later versions.
+
+Furthermore, the `EventHandlerCollection` interface is provided to support the functionalities of [`System.ComponentModel.EventHandlerList`](https://learn.microsoft.com/dotnet/api/system.componentmodel.eventhandlerlist) class from C#, along with the two implementations `EventHandlerList` and `EventHandlerDict` using a linked list and a dictionary respectively. The behaviour of `EventHandlerList` is exactly the same as of its counterpart from C#.
 
 A typical usage of `EventHandlerList` in C# can be translated directly into the python code:
 
 ```python
 class EventPropertyExample:
-    __event_item_changed: Final = object()
-
     def __init__(self) -> None:
         self.__events = EventHandlerList()
 
     @event  # [str, object] is inferred
-    def item_changed():  # -> accessors[str, object] is inferred
+    def item_changed():
         def add(self: Self, value: EventHandler[str, object]) -> None:
-            self.__events.add_handler(self.__event_item_changed, value)
+            self.__events.add_handler("item_changed", value)
 
         def remove(self: Self, value: EventHandler[str, object]) -> None:
-            self.__events.remove_handler(self.__event_item_changed, value)
+            self.__events.remove_handler("item_changed", value)
 
         return (add, remove)
 
     def _on_item_changed(self, key: str, value: object) -> None:
-        handler = self.__events[self.__event_item_changed]
+        handler = self.__events["item_changed"]
         if handler:
             handler(key, value)
 ```
